@@ -30,13 +30,12 @@ func NewP2PChatServer(
 }
 
 func (s *P2PChatServer) ReceiveMessage(ctx context.Context, msg *pb.Message) (*pb.MessageAck, error) {
-	//Save to database
+
 	err := s.chatSvc.SaveIncomingMessage(msg)
 	if err != nil {
 		return &pb.MessageAck{Success: false, Error: err.Error()}, nil
 	}
 
-	//Broadcast event to all HTTP SSE listeners
 	s.eventBus.Publish(events.Event{
 		Type: "message_received",
 		Data: msg,
@@ -50,6 +49,7 @@ func (s *P2PChatServer) ReceiveMessage(ctx context.Context, msg *pb.Message) (*p
 
 func (s *P2PChatServer) GetPeerInfo(ctx context.Context, _ *pb.Empty) (*pb.PeerInfo, error) {
 	profile, err := s.profileSvc.GetCurrentProfile()
+
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +63,7 @@ func (s *P2PChatServer) GetPeerInfo(ctx context.Context, _ *pb.Empty) (*pb.PeerI
 
 func (s *P2PChatServer) Ping(ctx context.Context, pingRequest *pb.PingRequest) (*pb.PingResponse, error) {
 	self, err := s.profileSvc.GetCurrentProfile()
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,9 +73,4 @@ func (s *P2PChatServer) Ping(ctx context.Context, pingRequest *pb.PingRequest) (
 		UserName:  self.UserName,
 		Timestamp: time.Now().Unix(),
 	}, nil
-}
-
-// implement this route
-func (s *P2PChatServer) StreamMessages() {
-	panic("to implement")
 }

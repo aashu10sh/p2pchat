@@ -84,7 +84,7 @@ func (s *ChatService) SendMessage(toPeerID, content, msgType string) (string, er
 	messageID := uuid.New().String()
 	msg := &pb.Message{
 		Id:           messageID,
-		FromPeerId:   profile.PeerID,
+		FromPeerId:   profile.PeerId,
 		FromUserName: profile.UserName,
 		ToPeerId:     toPeerID,
 		Content:      content,
