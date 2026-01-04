@@ -73,3 +73,8 @@ func (s *P2PChatServer) Ping(ctx context.Context, pingRequest *pb.PingRequest) (
 		Timestamp: time.Now().Unix(),
 	}, nil
 }
+
+// implement this route
+func (s *P2PChatServer) StreamMessages() {
+	panic("to implement")
+}

@@ -12,7 +12,7 @@ service P2PChatService {
   // RPC for getting another peers info.
   rpc GetPeerInfo(Empty) returns (PeerInfo);
   // RPC for streaming messages to other nodes.
-  rpc StreamMessages(Empty) returns (stream Message);
+  // rpc StreamMessages(Empty) returns (stream Message);
 }
 
 message Empty {}

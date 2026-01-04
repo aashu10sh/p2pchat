@@ -34,7 +34,6 @@ func NewManager(eventBus *events.EventBus) *Manager {
 }
 
 func (m *Manager) ConnectToPeer(peerID, address string, username string) error {
-	// Create gRPC client connection
 	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
@@ -54,7 +53,6 @@ func (m *Manager) ConnectToPeer(peerID, address string, username string) error {
 	}
 	m.mu.Unlock()
 
-	// Notify subscribers (HTTP SSE listeners)
 	m.eventBus.Publish(events.Event{
 		Type: "peer_joined",
 		Data: map[string]interface{}{

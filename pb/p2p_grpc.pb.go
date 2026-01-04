@@ -22,7 +22,6 @@ const (
 	P2PChatService_ReceiveMessage_FullMethodName = "/p2p.P2PChatService/ReceiveMessage"
 	P2PChatService_Ping_FullMethodName           = "/p2p.P2PChatService/Ping"
 	P2PChatService_GetPeerInfo_FullMethodName    = "/p2p.P2PChatService/GetPeerInfo"
-	P2PChatService_StreamMessages_FullMethodName = "/p2p.P2PChatService/StreamMessages"
 )
 
 // P2PChatServiceClient is the client API for P2PChatService service.
@@ -37,8 +36,6 @@ type P2PChatServiceClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// RPC for getting another peers info.
 	GetPeerInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PeerInfo, error)
-	// RPC for streaming messages to other nodes.
-	StreamMessages(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error)
 }
 
 type p2PChatServiceClient struct {
@@ -79,25 +76,6 @@ func (c *p2PChatServiceClient) GetPeerInfo(ctx context.Context, in *Empty, opts 
 	return out, nil
 }
 
-func (c *p2PChatServiceClient) StreamMessages(ctx context.Context, in *Empty, opts ...grpc.CallOption) (grpc.ServerStreamingClient[Message], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &P2PChatService_ServiceDesc.Streams[0], P2PChatService_StreamMessages_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[Empty, Message]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type P2PChatService_StreamMessagesClient = grpc.ServerStreamingClient[Message]
-
 // P2PChatServiceServer is the server API for P2PChatService service.
 // All implementations must embed UnimplementedP2PChatServiceServer
 // for forward compatibility.
@@ -110,8 +88,6 @@ type P2PChatServiceServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// RPC for getting another peers info.
 	GetPeerInfo(context.Context, *Empty) (*PeerInfo, error)
-	// RPC for streaming messages to other nodes.
-	StreamMessages(*Empty, grpc.ServerStreamingServer[Message]) error
 	mustEmbedUnimplementedP2PChatServiceServer()
 }
 
@@ -130,9 +106,6 @@ func (UnimplementedP2PChatServiceServer) Ping(context.Context, *PingRequest) (*P
 }
 func (UnimplementedP2PChatServiceServer) GetPeerInfo(context.Context, *Empty) (*PeerInfo, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPeerInfo not implemented")
-}
-func (UnimplementedP2PChatServiceServer) StreamMessages(*Empty, grpc.ServerStreamingServer[Message]) error {
-	return status.Error(codes.Unimplemented, "method StreamMessages not implemented")
 }
 func (UnimplementedP2PChatServiceServer) mustEmbedUnimplementedP2PChatServiceServer() {}
 func (UnimplementedP2PChatServiceServer) testEmbeddedByValue()                        {}
@@ -209,17 +182,6 @@ func _P2PChatService_GetPeerInfo_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _P2PChatService_StreamMessages_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(P2PChatServiceServer).StreamMessages(m, &grpc.GenericServerStream[Empty, Message]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type P2PChatService_StreamMessagesServer = grpc.ServerStreamingServer[Message]
-
 // P2PChatService_ServiceDesc is the grpc.ServiceDesc for P2PChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -240,12 +202,6 @@ var P2PChatService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _P2PChatService_GetPeerInfo_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "StreamMessages",
-			Handler:       _P2PChatService_StreamMessages_Handler,
-			ServerStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "p2p.proto",
 }

@@ -13,7 +13,12 @@ import (
 
 	"github.com/aashu10sh/p2pchat/internal/api"
 	"github.com/aashu10sh/p2pchat/internal/db"
+	"github.com/aashu10sh/p2pchat/internal/events"
+	ggrpc "github.com/aashu10sh/p2pchat/internal/grpc"
+	"github.com/aashu10sh/p2pchat/internal/peer"
 	"github.com/aashu10sh/p2pchat/internal/service"
+	"github.com/aashu10sh/p2pchat/pb"
+	"google.golang.org/grpc"
 )
 
 //go:embed frontend/build/*
@@ -22,7 +27,11 @@ var embeddedFiles embed.FS
 func main() {
 
 	db := db.GetDatabase()
+	eventBus := events.NewEventBus()
+
+	peerManager := peer.NewManager(eventBus)
 	profileSvc := service.NewProfileService(db)
+	chatSvc := service.NewChatService(db, peerManager, profileSvc, eventBus)
 
 	httpServer := SetupHttpServer(embeddedFiles, profileSvc)
 
@@ -38,6 +47,14 @@ func main() {
 		lis, err := net.Listen("tcp", ":5001")
 		if err != nil {
 			panic(err)
+		}
+		grpcServer := grpc.NewServer()
+
+		p2pChatServer := ggrpc.NewP2PChatServer(chatSvc, profileSvc, eventBus)
+		pb.RegisterP2PChatServiceServer(grpcServer, p2pChatServer)
+
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
 		}
 
 	}()

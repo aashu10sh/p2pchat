@@ -475,14 +475,12 @@ const file_p2p_proto_rawDesc = "" +
 	"\vMessageType\x12\b\n" +
 	"\x04TEXT\x10\x00\x12\t\n" +
 	"\x05IMAGE\x10\x01\x12\b\n" +
-	"\x04FILE\x10\x022\xc6\x01\n" +
+	"\x04FILE\x10\x022\x98\x01\n" +
 	"\x0eP2PChatService\x12/\n" +
 	"\x0eReceiveMessage\x12\f.p2p.Message\x1a\x0f.p2p.MessageAck\x12+\n" +
 	"\x04Ping\x12\x10.p2p.PingRequest\x1a\x11.p2p.PingResponse\x12(\n" +
 	"\vGetPeerInfo\x12\n" +
-	".p2p.Empty\x1a\r.p2p.PeerInfo\x12,\n" +
-	"\x0eStreamMessages\x12\n" +
-	".p2p.Empty\x1a\f.p2p.Message0\x01B\x0fZ\rp2pchat2.0/pbb\x06proto3"
+	".p2p.Empty\x1a\r.p2p.PeerInfoB\x0fZ\rp2pchat2.0/pbb\x06proto3"
 
 var (
 	file_p2p_proto_rawDescOnce sync.Once
@@ -512,13 +510,11 @@ var file_p2p_proto_depIdxs = []int32{
 	2, // 1: p2p.P2PChatService.ReceiveMessage:input_type -> p2p.Message
 	4, // 2: p2p.P2PChatService.Ping:input_type -> p2p.PingRequest
 	1, // 3: p2p.P2PChatService.GetPeerInfo:input_type -> p2p.Empty
-	1, // 4: p2p.P2PChatService.StreamMessages:input_type -> p2p.Empty
-	3, // 5: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
-	5, // 6: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
-	6, // 7: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
-	2, // 8: p2p.P2PChatService.StreamMessages:output_type -> p2p.Message
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
+	3, // 4: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
+	5, // 5: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
+	6, // 6: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
+	4, // [4:7] is the sub-list for method output_type
+	1, // [1:4] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
