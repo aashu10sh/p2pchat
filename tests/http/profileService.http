@@ -1,0 +1,16 @@
+
+
+
+// Checks if current profile exists
+# GET http://localhost:8080/api/profile/check
+
+
+
+GET http://localhost:8080/api/current-wifi
+
+# POST http://localhost:8080/api/profile
+# Content-Type: application/json
+
+# {
+#     "user_name":"aashutosh"
+# }

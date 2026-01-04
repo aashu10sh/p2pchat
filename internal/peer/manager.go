@@ -1,0 +1,81 @@
+package peer
+
+import (
+	"context"
+	"fmt"
+	"sync"
+
+	"github.com/aashu10sh/p2pchat/internal/events"
+	"github.com/aashu10sh/p2pchat/pb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+)
+
+type PeerConnection struct {
+	PeerID   string
+	Username string
+	Address  string
+	Client   pb.P2PChatServiceClient
+	Conn     *grpc.ClientConn
+	IsOnline bool
+}
+
+type Manager struct {
+	peers    map[string]*PeerConnection
+	mu       sync.RWMutex
+	eventBus *events.EventBus
+}
+
+func NewManager(eventBus *events.EventBus) *Manager {
+	return &Manager{
+		peers:    make(map[string]*PeerConnection),
+		eventBus: eventBus,
+	}
+}
+
+func (m *Manager) ConnectToPeer(peerID, address string, username string) error {
+	// Create gRPC client connection
+	conn, err := grpc.NewClient(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		return err
+	}
+
+	client := pb.NewP2PChatServiceClient(conn)
+
+	m.mu.Lock()
+	m.peers[peerID] = &PeerConnection{
+		PeerID:   peerID,
+		Username: username,
+		Address:  address,
+		Client:   client,
+		Conn:     conn,
+		IsOnline: true,
+	}
+	m.mu.Unlock()
+
+	// Notify subscribers (HTTP SSE listeners)
+	m.eventBus.Publish(events.Event{
+		Type: "peer_joined",
+		Data: map[string]interface{}{
+			"peer_id":  peerID,
+			"username": username,
+		},
+	})
+
+	return nil
+}
+
+func (m *Manager) SendMessage(peerID string, msg *pb.Message) error {
+	m.mu.RLock()
+	peer := m.peers[peerID]
+	m.mu.RUnlock()
+
+	if peer == nil {
+		return fmt.Errorf("peer not connected")
+	}
+
+	// Call peer's gRPC server
+	_, err := peer.Client.ReceiveMessage(context.Background(), msg)
+	return err
+}

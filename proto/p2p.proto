@@ -1,0 +1,58 @@
+syntax = "proto3";
+package p2p;
+option go_package = "p2pchat2.0/pb";
+
+// The p2p chat service is the main node to node service for communicating with other nodes and exposes similar methods
+service P2PChatService {
+
+  // RPC for handling when we recieve message from a node.
+  rpc ReceiveMessage(Message) returns (MessageAck);
+  // RPC for handling a ping.
+  rpc Ping(PingRequest) returns (PingResponse);
+  // RPC for getting another peers info.
+  rpc GetPeerInfo(Empty) returns (PeerInfo);
+  // RPC for streaming messages to other nodes.
+  rpc StreamMessages(Empty) returns (stream Message);
+}
+
+message Empty {}
+
+message Message {
+  string id = 1;
+  string from_peer_id = 2;
+  string from_user_name = 3;
+  string to_peer_id = 4;
+  string content = 5;
+  int64 timestamp = 6;
+  MessageType type = 7;
+}
+
+enum MessageType {
+  TEXT = 0;
+  IMAGE = 1;
+  FILE = 2;
+}
+
+message MessageAck {
+  bool success = 1;
+  string message_id = 2;
+  string error = 3;
+}
+
+message PingRequest {
+  int64 timestamp = 1;
+  string peer_id = 2;
+}
+
+message PingResponse {
+  int64 timestamp = 1;
+  string peer_id = 2;
+  string user_name = 3;
+}
+
+message PeerInfo {
+  string peer_id = 1;
+  string user_name = 2;
+  string wifi_name = 3;
+  int64 last_seen = 4;
+}
