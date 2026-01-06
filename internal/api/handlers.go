@@ -128,10 +128,11 @@ func (h *APIHandler) GetPeers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
-	// Set headers for SSE
+	// Set headers for SSE - must be set before any writes
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no") // Disable nginx buffering
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	flusher, ok := w.(http.Flusher)
@@ -140,8 +141,14 @@ func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Write status code explicitly
+	w.WriteHeader(http.StatusOK)
+	flusher.Flush()
+
 	// Send initial connection event
-	respondEvent(w, flusher, "connected", map[string]string{"status": "connected"})
+	if err := respondEvent(w, flusher, "connected", map[string]string{"status": "connected"}); err != nil {
+		return
+	}
 
 	// Subscribe to event bus
 	eventChan := h.eventBus.Subscribe()
@@ -151,25 +158,44 @@ func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
+	// Keep-alive ticker to prevent timeout
+	keepAlive := time.NewTicker(30 * time.Second)
+	defer keepAlive.Stop()
+
 	ctx := r.Context()
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case event := <-eventChan:
+		case event, ok := <-eventChan:
+			if !ok {
+				return
+			}
 			// Forward event bus events to SSE
 			switch event.Type {
 			case "message_received", "message_sent":
-				respondEvent(w, flusher, event.Type, event.Data)
+				if err := respondEvent(w, flusher, event.Type, event.Data); err != nil {
+					return
+				}
 			case "peer_discovered", "peer_joined":
-				respondEvent(w, flusher, "peer_update", event.Data)
+				if err := respondEvent(w, flusher, "peer_update", event.Data); err != nil {
+					return
+				}
 			}
 		case <-ticker.C:
 			peers, err := h.database.GetAllPeers()
 			if err != nil {
 				continue
 			}
-			respondEvent(w, flusher, "peers_update", peers)
+			if err := respondEvent(w, flusher, "peers_update", peers); err != nil {
+				return
+			}
+		case <-keepAlive.C:
+			// Send keep-alive comment to prevent connection timeout
+			if _, err := fmt.Fprintf(w, ": keep-alive\n\n"); err != nil {
+				return
+			}
+			flusher.Flush()
 		}
 	}
 }
@@ -236,13 +262,23 @@ func (h *APIHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func respondEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, data interface{}) {
+func respondEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, data interface{}) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return
+		return err
 	}
 
-	fmt.Fprintf(w, "event: %s\n", eventType)
-	fmt.Fprintf(w, "data: %s\n\n", jsonData)
+	// Write event type
+	if _, err := fmt.Fprintf(w, "event: %s\n", eventType); err != nil {
+		return err
+	}
+
+	// Write data
+	if _, err := fmt.Fprintf(w, "data: %s\n\n", jsonData); err != nil {
+		return err
+	}
+
+	// Flush immediately
 	flusher.Flush()
+	return nil
 }

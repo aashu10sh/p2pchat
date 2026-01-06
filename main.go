@@ -151,10 +151,12 @@ func SetupHttpServer(
 	mux.Handle("/", http.FileServer(http.FS(frontendFS)))
 
 	return &http.Server{
-		Addr:         ":8000",
-		Handler:      corsMiddleware(mux),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		Addr:              ":8000",
+		Handler:           corsMiddleware(mux),
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      0, // No timeout for SSE connections
+		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 }
