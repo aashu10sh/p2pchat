@@ -167,7 +167,7 @@ func (s *ChatService) SaveIncomingMessage(msg *pb.Message) error {
 	s.db.UpdateChat(chat)
 
 	// Set computed field
-	dbMsg.IsSentByMe = dbMsg.FromPeerID == profile.PeerID
+	dbMsg.IsSentByMe = dbMsg.FromPeerID == profile.PeerId
 
 	return nil
 }
@@ -179,7 +179,7 @@ func (s *ChatService) GetMessages(peerID string, limit int) ([]*db.Message, erro
 		return nil, err
 	}
 
-	chat, err := s.db.GetChatByPeers(profile.PeerID, peerID)
+	chat, err := s.db.GetChatByPeers(profile.PeerId, peerID)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *ChatService) GetMessages(peerID string, limit int) ([]*db.Message, erro
 
 	// Set computed field
 	for _, msg := range messages {
-		msg.IsSentByMe = msg.FromPeerID == profile.PeerID
+		msg.IsSentByMe = msg.FromPeerID == profile.PeerId
 	}
 
 	return messages, nil
@@ -204,7 +204,7 @@ func (s *ChatService) GetChats() ([]*db.Chat, error) {
 		return nil, err
 	}
 
-	return s.db.GetChatsByPeerID(profile.PeerID)
+	return s.db.GetChatsByPeerID(profile.PeerId)
 }
 
 // MarkChatAsRead - resets unread count

@@ -72,12 +72,28 @@ func (d *Database) CreateChat(chat *Chat) error {
 	d.Db.Create(chat)
 
 	if chat.ID == 0 {
-		return errors.New("could not create!")
+		return errors.New("could not create chat!")
 	}
 
 	return nil
 }
 
 func (d *Database) CreateMessage(msg *Message) error {
+	d.Db.Create(msg)
 
+	if msg.ID == 0 {
+		return errors.New("could not create message!")
+	}
+
+	return nil
+}
+
+func (d *Database) UpdateChat(chat *Chat) error {
+	tx := d.Db.Save(chat)
+	return tx.Error
+}
+
+func (d *Database) UpdateMessage(msg *Message) error {
+	tx := d.Db.Save(msg)
+	return tx.Error
 }
