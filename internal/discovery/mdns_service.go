@@ -62,13 +62,13 @@ func (m *MDNSService) StartServer() error {
 	}
 
 	service, err := mdns.NewMDNSService(
-		m.myPeerID,           // instance name
-		ServiceName,          // service type
-		Domain,               // domain
-		"",                   // hostname (empty = use local hostname)
-		m.grpcPort,           // port
+		m.myPeerID,                  // instance name
+		ServiceName,                 // service type
+		Domain,                      // domain
+		"",                          // hostname (empty = use local hostname)
+		m.grpcPort,                  // port
 		[]net.IP{net.ParseIP(host)}, // IPs
-		info,                 // TXT records
+		info,                        // TXT records
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create mDNS service: %w", err)

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
@@ -27,7 +28,7 @@ import (
 var embeddedFiles embed.FS
 
 func main() {
-	grpcPort := 5002
+	grpcPort := 5001
 	database := db.GetDatabase()
 	eventBus := events.NewEventBus()
 
@@ -52,7 +53,7 @@ func main() {
 	}()
 
 	go func() {
-		lis, err := net.Listen("tcp", ":5002")
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 		if err != nil {
 			panic(err)
 		}
