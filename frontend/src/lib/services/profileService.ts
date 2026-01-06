@@ -5,7 +5,7 @@ import { err, ok, Result } from 'neverthrow';
 export default class UserService {
 	async getCurrentUser(): Promise<Result<Profile, Error>> {
 		try {
-			const response = await fetch('http://localhost:8080/api/profile/check', {
+			const response = await fetch('http://localhost:8000/api/profile/check', {
 				method: 'GET'
 			});
 
@@ -26,7 +26,7 @@ export default class UserService {
 	}
 
 	async createNewProfile(userName: string): Promise<Result<Profile, Error>> {
-		const response = await fetch('http://localhost:8080/api/profile', {
+		const response = await fetch('http://localhost:8000/api/profile', {
 			method: 'POST',
 			body: JSON.stringify({
 				user_name: userName
@@ -48,7 +48,7 @@ export default class UserService {
 	}
 
 	async getCurrentWifi(): Promise<string> {
-		const response = await fetch('http://localhost:8080/api/current-wifi', {
+		const response = await fetch('http://localhost:8000/api/current-wifi', {
 			method: 'GET'
 		});
 

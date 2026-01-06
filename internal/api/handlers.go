@@ -2,21 +2,35 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
+	"github.com/aashu10sh/p2pchat/internal/db"
+	"github.com/aashu10sh/p2pchat/internal/events"
 	"github.com/aashu10sh/p2pchat/internal/service"
 	"github.com/aashu10sh/p2pchat/internal/utils"
 )
 
 type APIHandler struct {
 	profileSvc *service.ProfileService
+	database   *db.Database
+	chatSvc    *service.ChatService
+	eventBus   *events.EventBus
 }
 
 func NewAPIHandler(
 	profileSvc *service.ProfileService,
+	database *db.Database,
+	chatSvc *service.ChatService,
+	eventBus *events.EventBus,
 ) *APIHandler {
 	return &APIHandler{
 		profileSvc: profileSvc,
+		database:   database,
+		chatSvc:    chatSvc,
+		eventBus:   eventBus,
 	}
 }
 
@@ -100,4 +114,135 @@ func (h *APIHandler) GetCurrentWifiName(w http.ResponseWriter, r *http.Request) 
 		"wifiName": wifiName,
 	})
 
+}
+
+func (h *APIHandler) GetPeers(w http.ResponseWriter, r *http.Request) {
+	peers, err := h.database.GetAllPeers()
+
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to fetch peers")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, peers)
+}
+
+func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
+	// Set headers for SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	// Send initial connection event
+	respondEvent(w, flusher, "connected", map[string]string{"status": "connected"})
+
+	// Subscribe to event bus
+	eventChan := h.eventBus.Subscribe()
+	defer h.eventBus.Unsubscribe(eventChan)
+
+	// Ticker for periodic peer updates
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	ctx := r.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case event := <-eventChan:
+			// Forward event bus events to SSE
+			switch event.Type {
+			case "message_received", "message_sent":
+				respondEvent(w, flusher, event.Type, event.Data)
+			case "peer_discovered", "peer_joined":
+				respondEvent(w, flusher, "peer_update", event.Data)
+			}
+		case <-ticker.C:
+			peers, err := h.database.GetAllPeers()
+			if err != nil {
+				continue
+			}
+			respondEvent(w, flusher, "peers_update", peers)
+		}
+	}
+}
+
+func (h *APIHandler) GetChats(w http.ResponseWriter, r *http.Request) {
+	chats, err := h.chatSvc.GetChats()
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to fetch chats")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, chats)
+}
+
+func (h *APIHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
+	peerID := r.URL.Query().Get("peer_id")
+	if peerID == "" {
+		respondError(w, http.StatusBadRequest, "peer_id is required")
+		return
+	}
+
+	limitStr := r.URL.Query().Get("limit")
+	limit := 50 // default
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = l
+		}
+	}
+
+	messages, err := h.chatSvc.GetMessages(peerID, limit)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "Failed to fetch messages")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, messages)
+}
+
+func (h *APIHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
+	var req SendMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.ToPeerID == "" || req.Content == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id and content are required")
+		return
+	}
+
+	if req.MessageType == "" {
+		req.MessageType = "TEXT"
+	}
+
+	messageID, err := h.chatSvc.SendMessage(req.ToPeerID, req.Content, req.MessageType)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{
+		"message_id": messageID,
+		"status":     "sent",
+	})
+}
+
+func respondEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, data interface{}) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return
+	}
+
+	fmt.Fprintf(w, "event: %s\n", eventType)
+	fmt.Fprintf(w, "data: %s\n\n", jsonData)
+	flusher.Flush()
 }

@@ -51,9 +51,9 @@ type MessageListResponse struct {
 }
 
 type SendMessageRequest struct {
-	ToPeerID string `json:"to_peer_id" binding:"required"`
-	Content  string `json:"content" binding:"required"`
-	Type     string `json:"type"`
+	ToPeerID    string `json:"to_peer_id" binding:"required"`
+	Content     string `json:"content" binding:"required"`
+	MessageType string `json:"message_type"`
 }
 
 type SendMessageResponse struct {
