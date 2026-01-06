@@ -23,10 +23,7 @@
 		// Initial fetch
 		await peerService.fetchPeers();
 
-		// Start SSE connection
-		peerService.startEventStream();
-
-		// Subscribe to store updates
+		// Subscribe to store updates (SSE is started at dashboard level)
 		const unsubscribe = peers.subscribe((value) => {
 			peerList = value;
 		});
@@ -34,10 +31,6 @@
 		return () => {
 			unsubscribe();
 		};
-	});
-
-	onDestroy(() => {
-		peerService.stopEventStream();
 	});
 
 	function isRecentlyOnline(peer: Peer): boolean {

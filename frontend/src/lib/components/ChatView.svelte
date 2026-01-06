@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import ChatService, { messages } from '$lib/services/chatService';
-	import PeerService from '$lib/services/peerService';
+	import { peers } from '$lib/services/peerService';
 	import type { Message } from '$lib/entites/message';
 	import type { Peer } from '$lib/entites/peer';
 
@@ -14,10 +14,25 @@
 	let messageList = $state<Message[]>([]);
 	let messageInput = $state('');
 	let isLoading = $state(false);
+	let isSending = $state(false);
 	let chatContainer: HTMLDivElement;
+	let currentPeer = $state<Peer | null>(activePeer);
 
 	const chatService = new ChatService();
-	const peerService = new PeerService();
+
+	// Update currentPeer reactively when peers store changes
+	$effect(() => {
+		if (activePeer) {
+			peers.subscribe((peerList) => {
+				const updated = peerList.find(p => p.peer_id === activePeer.peer_id);
+				if (updated) {
+					currentPeer = updated;
+				}
+			});
+		} else {
+			currentPeer = null;
+		}
+	});
 
 	$effect(() => {
 		if (activePeer) {
@@ -32,7 +47,8 @@
 		const result = await chatService.fetchMessages(activePeer.peer_id);
 		result.match(
 			(msgs) => {
-				messageList = msgs.reverse(); // Show oldest first
+				// Don't reverse - keep chronological order (oldest first, newest last)
+				messageList = msgs;
 				setTimeout(scrollToBottom, 100);
 			},
 			(error) => {
@@ -44,19 +60,22 @@
 
 	async function handleSendMessage(e: Event) {
 		e.preventDefault();
-		if (!messageInput.trim() || !activePeer) return;
+		if (!messageInput.trim() || !activePeer || isSending) return;
 
 		const content = messageInput;
 		messageInput = '';
+		isSending = true;
 
 		const result = await chatService.sendMessage(activePeer.peer_id, content);
 		result.match(
 			() => {
-				// Message sent, will be updated via SSE
+				// Message sent successfully
+				isSending = false;
 			},
 			(error) => {
 				console.error('Failed to send message:', error);
 				messageInput = content; // Restore message on error
+				isSending = false;
 			}
 		);
 	}
@@ -67,32 +86,66 @@
 		}
 	}
 
+	function isRecentlyOnline(peer: Peer): boolean {
+		if (!peer.last_seen) return false;
+		const lastSeen = new Date(peer.last_seen);
+		const now = new Date();
+		const diffMinutes = (now.getTime() - lastSeen.getTime()) / 1000 / 60;
+		return diffMinutes < 1; // Online if seen in last minute
+	}
+
 	function formatTime(timestamp: string): string {
-		const date = new Date(timestamp);
-		return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+		if (!timestamp) return '';
+		try {
+			const date = new Date(timestamp);
+			if (isNaN(date.getTime())) {
+				return '';
+			}
+			return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+		} catch {
+			return '';
+		}
+	}
+
+	function formatDate(timestamp: string): string {
+		if (!timestamp) return '';
+		try {
+			const date = new Date(timestamp);
+			if (isNaN(date.getTime())) {
+				return '';
+			}
+			const today = new Date();
+			const messageDate = new Date(date);
+
+			if (messageDate.toDateString() === today.toDateString()) {
+				return 'Today';
+			}
+
+			const yesterday = new Date(today);
+			yesterday.setDate(yesterday.getDate() - 1);
+			if (messageDate.toDateString() === yesterday.toDateString()) {
+				return 'Yesterday';
+			}
+
+			return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+		} catch {
+			return '';
+		}
 	}
 
 	onMount(() => {
-		// Subscribe to messages store
+		// Subscribe to messages store for real-time updates
 		const unsubscribe = messages.subscribe((value) => {
 			if (activePeer && value.length > 0) {
-				messageList = [...value].reverse();
+				// Don't reverse - keep chronological order
+				messageList = value;
 				setTimeout(scrollToBottom, 50);
 			}
-		});
-
-		// Subscribe to SSE for real-time updates
-		peerService.startEventStream((peers) => {
-			// Handled by peer service
 		});
 
 		return () => {
 			unsubscribe();
 		};
-	});
-
-	onDestroy(() => {
-		peerService.stopEventStream();
 	});
 </script>
 
@@ -116,18 +169,18 @@
 		<div class="chat-header">
 			<div class="peer-info">
 				<div class="peer-avatar">
-					{#if activePeer.image_url}
-						<img src={activePeer.image_url} alt={activePeer.username} />
-					{:else}
+					{#if currentPeer?.image_url}
+						<img src={currentPeer.image_url} alt={currentPeer.username} />
+					{:else if currentPeer}
 						<div class="avatar-placeholder">
-							{activePeer.username.charAt(0).toUpperCase()}
+							{currentPeer.username.charAt(0).toUpperCase()}
 						</div>
 					{/if}
 				</div>
 				<div class="peer-details">
-					<h2>{activePeer.username}</h2>
-					<span class="peer-status" class:online={activePeer.is_online}>
-						{activePeer.is_online ? 'Online' : 'Offline'}
+					<h2>{currentPeer?.username}</h2>
+					<span class="peer-status" class:online={currentPeer && isRecentlyOnline(currentPeer)}>
+						{currentPeer && isRecentlyOnline(currentPeer) ? 'Online' : 'Offline'}
 					</span>
 				</div>
 			</div>
@@ -141,11 +194,32 @@
 					<p>No messages yet. Start the conversation!</p>
 				</div>
 			{:else}
-				{#each messageList as message (message.ID)}
-					<div class="message" class:own={message.is_sent_by_me}>
-						<div class="message-content">
-							<p>{message.content}</p>
-							<span class="message-time">{formatTime(message.sent_at)}</span>
+				{#each messageList as message, index (message.ID)}
+					{#if index === 0 || formatDate(messageList[index - 1].sent_at) !== formatDate(message.sent_at)}
+						<div class="date-separator">
+							<span>{formatDate(message.sent_at)}</span>
+						</div>
+					{/if}
+					<div class="message" class:sent={message.is_sent_by_me} class:received={!message.is_sent_by_me}>
+						<div class="message-bubble">
+							<p class="message-text">{message.content}</p>
+							<div class="message-footer">
+								<span class="message-time">{formatTime(message.sent_at)}</span>
+								{#if message.is_sent_by_me}
+									<span class="message-status">
+										{#if message.delivered_at}
+											<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+												<path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
+												<path d="M10.354 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-1-1a.5.5 0 0 1 .708-.708l.646.647 6.646-6.647a.5.5 0 0 1 .708 0z"/>
+											</svg>
+										{:else}
+											<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+												<path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+											</svg>
+										{/if}
+									</span>
+								{/if}
+							</div>
 						</div>
 					</div>
 				{/each}
@@ -159,11 +233,18 @@
 				placeholder="Type a message..."
 				class="message-input"
 				autocomplete="off"
+				disabled={isSending}
 			/>
-			<button type="submit" class="send-button" disabled={!messageInput.trim()}>
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-					<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-				</svg>
+			<button type="submit" class="send-button" disabled={!messageInput.trim() || isSending}>
+				{#if isSending}
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="spinner">
+						<circle cx="12" cy="12" r="10" stroke-width="3"/>
+					</svg>
+				{:else}
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+						<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+					</svg>
+				{/if}
 			</button>
 		</form>
 	</div>
@@ -255,7 +336,7 @@
 		padding: 16px;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 4px;
 	}
 
 	.loading,
@@ -265,36 +346,94 @@
 		padding: 32px;
 	}
 
-	.message {
+	.date-separator {
 		display: flex;
-		margin-bottom: 4px;
+		align-items: center;
+		justify-content: center;
+		margin: 16px 0;
 	}
 
-	.message.own {
+	.date-separator span {
+		background-color: #2f3136;
+		color: #72767d;
+		padding: 4px 12px;
+		border-radius: 12px;
+		font-size: 12px;
+		font-weight: 500;
+	}
+
+	.message {
+		display: flex;
+		margin-bottom: 2px;
+		animation: slideIn 0.2s ease-out;
+	}
+
+	@keyframes slideIn {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.message.sent {
 		justify-content: flex-end;
 	}
 
-	.message-content {
+	.message.received {
+		justify-content: flex-start;
+	}
+
+	.message-bubble {
 		max-width: 60%;
-		padding: 10px 14px;
+		padding: 8px 12px;
 		border-radius: 18px;
+		position: relative;
+	}
+
+	.message.received .message-bubble {
 		background-color: #40444b;
 		color: #dcddde;
+		border-bottom-left-radius: 4px;
 	}
 
-	.message.own .message-content {
+	.message.sent .message-bubble {
 		background-color: #5865f2;
 		color: #fff;
+		border-bottom-right-radius: 4px;
 	}
 
-	.message-content p {
+	.message-text {
 		margin: 0 0 4px 0;
 		word-wrap: break-word;
+		font-size: 15px;
+		line-height: 1.4;
+	}
+
+	.message-footer {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		justify-content: flex-end;
 	}
 
 	.message-time {
-		font-size: 10px;
+		font-size: 11px;
 		opacity: 0.7;
+	}
+
+	.message-status {
+		display: flex;
+		align-items: center;
+		opacity: 0.8;
+	}
+
+	.message-status svg {
+		width: 14px;
+		height: 14px;
 	}
 
 	.message-input-container {
@@ -320,6 +459,11 @@
 		background-color: #484c52;
 	}
 
+	.message-input:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
 	.send-button {
 		padding: 12px 20px;
 		background-color: #5865f2;
@@ -340,6 +484,19 @@
 	.send-button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.spinner {
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	/* Scrollbar styling */

@@ -169,6 +169,12 @@ func (s *ChatService) SaveIncomingMessage(msg *pb.Message) error {
 	// Set computed field
 	dbMsg.IsSentByMe = dbMsg.FromPeerID == profile.PeerId
 
+	// Publish event for real-time UI update
+	s.eventBus.Publish(events.Event{
+		Type: "message_received",
+		Data: dbMsg,
+	})
+
 	return nil
 }
 

@@ -154,10 +154,6 @@ func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
 	eventChan := h.eventBus.Subscribe()
 	defer h.eventBus.Unsubscribe(eventChan)
 
-	// Ticker for periodic peer updates
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
 	// Keep-alive ticker to prevent timeout
 	keepAlive := time.NewTicker(30 * time.Second)
 	defer keepAlive.Stop()
@@ -171,24 +167,21 @@ func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			// Forward event bus events to SSE
+			// Forward event bus events to SSE immediately
 			switch event.Type {
 			case "message_received", "message_sent":
 				if err := respondEvent(w, flusher, event.Type, event.Data); err != nil {
 					return
 				}
 			case "peer_discovered", "peer_joined":
-				if err := respondEvent(w, flusher, "peer_update", event.Data); err != nil {
+				// Send full peer list update on peer changes
+				peers, err := h.database.GetAllPeers()
+				if err != nil {
+					continue
+				}
+				if err := respondEvent(w, flusher, "peers_update", peers); err != nil {
 					return
 				}
-			}
-		case <-ticker.C:
-			peers, err := h.database.GetAllPeers()
-			if err != nil {
-				continue
-			}
-			if err := respondEvent(w, flusher, "peers_update", peers); err != nil {
-				return
 			}
 		case <-keepAlive.C:
 			// Send keep-alive comment to prevent connection timeout
