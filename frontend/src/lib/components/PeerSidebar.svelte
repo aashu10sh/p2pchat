@@ -19,9 +19,9 @@
 		}
 	}
 
-	onMount(async () => {
+	onMount(() => {
 		// Initial fetch
-		await peerService.fetchPeers();
+		peerService.fetchPeers();
 
 		// Subscribe to store updates (SSE is started at dashboard level)
 		const unsubscribe = peers.subscribe((value) => {
@@ -49,24 +49,24 @@
 		const diffHours = Math.floor(diffMinutes / 60);
 		const diffDays = Math.floor(diffHours / 24);
 
-		if (diffMinutes < 1) return 'Just now';
-		if (diffMinutes < 60) return `${diffMinutes}m ago`;
-		if (diffHours < 24) return `${diffHours}h ago`;
-		return `${diffDays}d ago`;
+		if (diffMinutes < 1) return 'JUST_NOW';
+		if (diffMinutes < 60) return `${diffMinutes}M`;
+		if (diffHours < 24) return `${diffHours}H`;
+		return `${diffDays}D`;
 	}
 </script>
 
 <aside class="peer-sidebar">
 	<div class="sidebar-header">
-		<h2>Peers</h2>
-		<span class="peer-count">{peerList.length}</span>
+		<h2>NODE_LIST</h2>
+		<span class="peer-count">[{peerList.length}]</span>
 	</div>
 
 	<div class="peer-list">
 		{#if peerList.length === 0}
 			<div class="no-peers">
-				<p>No peers discovered yet</p>
-				<small>Waiting for peers on the network...</small>
+				<p>NO_NODES_FOUND</p>
+				<small>AWAITING_CONNECTIONS...</small>
 			</div>
 		{:else}
 			{#each peerList as peer (peer.peer_id)}
@@ -79,23 +79,16 @@
 					onclick={() => handlePeerClick(peer)}
 					onkeydown={(e) => e.key === 'Enter' && handlePeerClick(peer)}
 				>
-					<div class="peer-avatar">
-						{#if peer.image_url}
-							<img src={peer.image_url} alt={peer.username} />
-						{:else}
-							<div class="avatar-placeholder">
-								{peer.username.charAt(0).toUpperCase()}
-							</div>
-						{/if}
-						<div class="status-indicator" class:online={isRecentlyOnline(peer)}></div>
+					<div class="status-col">
+						<div class="status-indicator"></div>
 					</div>
 					<div class="peer-info">
-						<div class="peer-username">{peer.username}</div>
+						<div class="peer-username">@{peer.username}</div>
 						<div class="peer-status">
 							{#if isRecentlyOnline(peer)}
-								<span class="online-text">Online</span>
+								<span class="online-text">ACTIVE</span>
 							{:else}
-								<span class="offline-text">{formatLastSeen(peer.last_seen)}</span>
+								<span class="offline-text">DC:{formatLastSeen(peer.last_seen)}</span>
 							{/if}
 						</div>
 					</div>
@@ -107,118 +100,110 @@
 
 <style>
 	.peer-sidebar {
-		width: 240px;
+		width: 250px;
 		height: 100vh;
-		background-color: #2f3136;
+		background-color: var(--bg-primary);
 		display: flex;
 		flex-direction: column;
-		border-right: 1px solid #202225;
+		border-right: 1px solid var(--border-color);
+		font-family: var(--font-mono);
 	}
 
 	.sidebar-header {
-		padding: 16px;
-		border-bottom: 1px solid #202225;
+		padding: 20px;
+		border-bottom: 1px solid var(--border-color);
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 	}
 
 	.sidebar-header h2 {
-		color: #fff;
-		font-size: 16px;
+		color: var(--text-primary);
+		font-size: 11px;
 		font-weight: 600;
+		letter-spacing: 0.1em;
 		margin: 0;
 	}
 
 	.peer-count {
-		background-color: #5865f2;
-		color: #fff;
-		font-size: 12px;
-		padding: 2px 8px;
-		border-radius: 12px;
-		font-weight: 600;
+		color: var(--text-accent);
+		font-size: 11px;
 	}
 
 	.peer-list {
 		flex: 1;
 		overflow-y: auto;
-		padding: 8px;
+		padding: 12px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
 	}
 
 	.no-peers {
 		text-align: center;
 		padding: 32px 16px;
-		color: #b9bbbe;
+		color: var(--text-secondary);
 	}
 
 	.no-peers p {
 		margin: 0 0 8px 0;
-		font-size: 14px;
+		font-size: 12px;
+		letter-spacing: 0.05em;
 	}
 
 	.no-peers small {
-		font-size: 12px;
-		color: #72767d;
+		font-size: 10px;
+		opacity: 0.5;
+		letter-spacing: 0.05em;
 	}
 
 	.peer-item {
 		display: flex;
-		align-items: center;
-		padding: 8px;
-		border-radius: 8px;
-		margin-bottom: 4px;
+		align-items: flex-start;
+		padding: 10px 12px;
+		border-radius: 4px;
 		cursor: pointer;
-		transition: background-color 0.15s ease;
+		transition: background-color 0.1s ease;
+		background-color: transparent;
 	}
 
 	.peer-item:hover {
-		background-color: #393c43;
+		background-color: var(--bg-secondary);
 	}
 
 	.peer-item.active {
-		background-color: #404449;
+		background-color: var(--bg-tertiary);
+		border-left: 2px solid var(--text-accent);
+		padding-left: 10px; /* Adjust for border */
 	}
 
 	.peer-item:focus {
-		outline: 2px solid #5865f2;
-		outline-offset: -2px;
+		outline: 1px solid var(--text-accent);
+		outline-offset: -1px;
 	}
 
-	.peer-avatar {
-		position: relative;
-		margin-right: 12px;
-	}
-
-	.peer-avatar img,
-	.avatar-placeholder {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-	}
-
-	.avatar-placeholder {
-		background: linear-gradient(135deg, #5865f2 0%, #7289da 100%);
+	.status-col {
+		width: 16px;
 		display: flex;
-		align-items: center;
 		justify-content: center;
-		color: #fff;
-		font-size: 18px;
-		font-weight: 600;
+		padding-top: 5px;
+		margin-right: 8px;
 	}
 
 	.status-indicator {
-		position: absolute;
-		bottom: 0;
-		right: 0;
-		width: 12px;
-		height: 12px;
-		border-radius: 50%;
-		background-color: #747f8d;
-		border: 3px solid #2f3136;
+		width: 6px;
+		height: 6px;
+		border-radius: 0;
+		background-color: var(--border-color);
 	}
 
-	.status-indicator.online {
-		background-color: #3ba55d;
+	.peer-item.online .status-indicator {
+		background-color: var(--text-accent);
+		box-shadow: 0 0 5px var(--text-accent);
+	}
+
+	.peer-item.active.online .status-indicator {
+		animation: pulse 2s infinite ease-in-out;
 	}
 
 	.peer-info {
@@ -227,42 +212,39 @@
 	}
 
 	.peer-username {
-		color: #fff;
-		font-size: 14px;
+		color: var(--text-primary);
+		font-size: 13px;
+		font-family: var(--font-sans);
 		font-weight: 500;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+		line-height: 1.2;
 	}
 
 	.peer-status {
-		font-size: 12px;
-		margin-top: 2px;
+		font-size: 10px;
+		margin-top: 4px;
+		letter-spacing: 0.05em;
 	}
 
 	.online-text {
-		color: #3ba55d;
+		color: var(--text-accent);
 	}
 
 	.offline-text {
-		color: #72767d;
+		color: var(--text-secondary);
 	}
 
-	/* Scrollbar styling */
-	.peer-list::-webkit-scrollbar {
-		width: 8px;
-	}
-
-	.peer-list::-webkit-scrollbar-track {
-		background: #2f3136;
-	}
-
-	.peer-list::-webkit-scrollbar-thumb {
-		background: #202225;
-		border-radius: 4px;
-	}
-
-	.peer-list::-webkit-scrollbar-thumb:hover {
-		background: #1a1c1e;
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 0.5;
+			box-shadow: 0 0 2px var(--text-accent);
+		}
+		50% {
+			opacity: 1;
+			box-shadow: 0 0 8px var(--text-accent);
+		}
 	}
 </style>

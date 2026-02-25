@@ -28,13 +28,13 @@
 
 <div class="dashboard-container">
 	<PeerSidebar onPeerSelect={handlePeerSelect} activePeerId={activePeer?.peer_id} />
-	<ChatView activePeer={activePeer} myPeerId={data.user.peer_id} />
+	<ChatView {activePeer} myPeerId={data.user.peer_id} />
 </div>
 
 <style>
 	.dashboard-container {
 		display: flex;
 		height: 100vh;
-		background-color: #36393f;
+		background-color: var(--bg-primary); /* True black background */
 	}
 </style>

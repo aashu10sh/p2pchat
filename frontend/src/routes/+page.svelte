@@ -28,19 +28,79 @@
 	});
 </script>
 
-{#if isFetching}
-	<div class="loading">
-		<h1>Loading...</h1>
-	</div>
-{:else if error}
-	<div class="error">
-		<!-- <h1>Error</h1> -->
-		<pre>{error.error}</pre>
-		<pre>Redirecting!</pre>
-	</div>
-{:else if profile}
-	<div class="success">
-		<h1>Hi {profile.user_name}!</h1>
-		<h2>Redirecting you to the dashboard...</h2>
-	</div>
-{/if}
+<div class="screen-wrapper">
+	{#if isFetching}
+		<div class="status connecting">
+			<span class="cursor">_</span> Initialize connection...
+		</div>
+	{:else if error}
+		<div class="status error-state">
+			<div class="err-text">ERR: {error.error}</div>
+			<div class="sub-text">Redirecting to new profile...</div>
+		</div>
+	{:else if profile}
+		<div class="status success">
+			<div class="auth-text">AUTH OK: <span class="accent">{profile.user_name}</span></div>
+			<div class="sub-text">Loading dashboard module...</div>
+		</div>
+	{/if}
+</div>
+
+<style>
+	.screen-wrapper {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100vh;
+		width: 100vw;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
+	}
+
+	.status {
+		font-family: var(--font-mono);
+		font-size: 14px;
+		letter-spacing: 0.05em;
+	}
+
+	.connecting {
+		color: var(--text-secondary);
+	}
+
+	.error-state .err-text {
+		color: #ff3333;
+		margin-bottom: 8px;
+	}
+
+	.success .auth-text {
+		color: var(--text-secondary);
+		margin-bottom: 8px;
+	}
+
+	.accent {
+		color: var(--text-accent);
+	}
+
+	.sub-text {
+		font-size: 12px;
+		color: var(--text-secondary);
+		opacity: 0.5;
+	}
+
+	.cursor {
+		display: inline-block;
+		animation: blink 1s step-end infinite;
+		color: var(--text-accent);
+		margin-right: 4px;
+	}
+
+	@keyframes blink {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0;
+		}
+	}
+</style>

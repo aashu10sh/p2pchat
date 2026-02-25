@@ -2,6 +2,19 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
+:root {
+	--bg-primary: #000000;
+	--bg-secondary: #0A0A0A;
+	--bg-tertiary: #111111;
+	--text-primary: #FFFFFF;
+	--text-secondary: #888888;
+	--text-accent: #00FF41; /* Matrix pure green */
+	--border-color: #1A1A1A;
+	--border-hover: #333333;
+	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+}
+
 * {
 	margin: 0;
 	padding: 0;
@@ -11,7 +24,35 @@
 body {
 	margin: 0;
 	padding: 0;
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-		sans-serif;
+	font-family: var(--font-sans);
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
 	overflow: hidden;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Text Selection */
+::selection {
+	background-color: var(--text-accent);
+	color: var(--bg-primary);
+}
+
+/* Global scrollbar rules */
+::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--border-color);
+	border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--border-hover);
 }

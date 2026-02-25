@@ -16,22 +16,31 @@
 	let isLoading = $state(false);
 	let isSending = $state(false);
 	let chatContainer: HTMLDivElement;
-	let currentPeer = $state<Peer | null>(activePeer);
+	let currentPeer = $state<Peer | null>(null);
+	let inputRef = $state<HTMLInputElement | null>(null);
+	let isFocused = $state(false);
 
 	const chatService = new ChatService();
 
 	// Update currentPeer reactively when peers store changes
 	$effect(() => {
-		if (activePeer) {
-			peers.subscribe((peerList) => {
-				const updated = peerList.find(p => p.peer_id === activePeer.peer_id);
-				if (updated) {
-					currentPeer = updated;
-				}
-			});
-		} else {
+		if (!activePeer) {
 			currentPeer = null;
+			return;
 		}
+
+		currentPeer = activePeer; // Set initially
+
+		const unsubscribe = peers.subscribe((peerList) => {
+			const updated = peerList.find((p) => p.peer_id === activePeer.peer_id);
+			if (updated) {
+				currentPeer = updated;
+			}
+		});
+
+		return () => {
+			unsubscribe();
+		};
 	});
 
 	$effect(() => {
@@ -71,6 +80,9 @@
 			() => {
 				// Message sent successfully
 				isSending = false;
+				setTimeout(() => {
+					if (inputRef) inputRef.focus();
+				}, 10);
 			},
 			(error) => {
 				console.error('Failed to send message:', error);
@@ -101,7 +113,12 @@
 			if (isNaN(date.getTime())) {
 				return '';
 			}
-			return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+			return date.toLocaleTimeString('en-US', {
+				hour12: false,
+				hour: '2-digit',
+				minute: '2-digit',
+				second: '2-digit'
+			});
 		} catch {
 			return '';
 		}
@@ -114,20 +131,7 @@
 			if (isNaN(date.getTime())) {
 				return '';
 			}
-			const today = new Date();
-			const messageDate = new Date(date);
-
-			if (messageDate.toDateString() === today.toDateString()) {
-				return 'Today';
-			}
-
-			const yesterday = new Date(today);
-			yesterday.setDate(yesterday.getDate() - 1);
-			if (messageDate.toDateString() === yesterday.toDateString()) {
-				return 'Yesterday';
-			}
-
-			return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+			return date.toISOString().split('T')[0];
 		} catch {
 			return '';
 		}
@@ -147,105 +151,102 @@
 			unsubscribe();
 		};
 	});
+
+	function handleContainerClick() {
+		if (inputRef) inputRef.focus();
+	}
 </script>
 
 {#if !activePeer}
 	<div class="no-chat-selected">
 		<div class="placeholder">
-			<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-				/>
-			</svg>
-			<h3>Select a peer to start chatting</h3>
-			<p>Choose a peer from the sidebar to begin messaging</p>
+			<div class="cursor pulse">_</div>
+			<h3>AWAITING_CONNECTION</h3>
+			<p>Select a node from the registry to initiate transmission sequence.</p>
 		</div>
 	</div>
 {:else}
 	<div class="chat-view">
 		<div class="chat-header">
-			<div class="peer-info">
-				<div class="peer-avatar">
-					{#if currentPeer?.image_url}
-						<img src={currentPeer.image_url} alt={currentPeer.username} />
-					{:else if currentPeer}
-						<div class="avatar-placeholder">
-							{currentPeer.username.charAt(0).toUpperCase()}
-						</div>
-					{/if}
-				</div>
-				<div class="peer-details">
-					<h2>{currentPeer?.username}</h2>
-					<span class="peer-status" class:online={currentPeer && isRecentlyOnline(currentPeer)}>
-						{currentPeer && isRecentlyOnline(currentPeer) ? 'Online' : 'Offline'}
-					</span>
-				</div>
+			<div class="peer-details">
+				<span class="label">TARGET:</span>
+				<h2>@{currentPeer?.username}</h2>
+				<span class="peer-status" class:online={currentPeer && isRecentlyOnline(currentPeer)}>
+					[{currentPeer && isRecentlyOnline(currentPeer) ? 'LINK_ACTIVE' : 'OFFLINE'}]
+				</span>
+			</div>
+			<div class="header-meta">
+				<span class="label">ID:</span>
+				{currentPeer?.peer_id.substring(0, 8)}...
 			</div>
 		</div>
 
 		<div class="messages-container" bind:this={chatContainer}>
 			{#if isLoading}
-				<div class="loading">Loading messages...</div>
+				<div class="loading">
+					<span class="pulse">Decrypting transmission logs...</span>
+				</div>
 			{:else if messageList.length === 0}
 				<div class="no-messages">
-					<p>No messages yet. Start the conversation!</p>
+					<p>>> CONNECTION ESTABLISHED. LOG IS EMPTY.</p>
 				</div>
 			{:else}
+				<div class="log-start">--- BEGIN_LOG ---</div>
 				{#each messageList as message, index (message.ID)}
 					{#if index === 0 || formatDate(messageList[index - 1].sent_at) !== formatDate(message.sent_at)}
 						<div class="date-separator">
 							<span>{formatDate(message.sent_at)}</span>
 						</div>
 					{/if}
-					<div class="message" class:sent={message.is_sent_by_me} class:received={!message.is_sent_by_me}>
-						<div class="message-bubble">
+					<div
+						class="message"
+						class:sent={message.is_sent_by_me}
+						class:received={!message.is_sent_by_me}
+					>
+						<div class="message-meta">
+							<span class="message-time">[{formatTime(message.sent_at)}]</span>
+							<span class="message-author">{message.is_sent_by_me ? 'SYS' : 'RCV'}</span>
+							{#if message.is_sent_by_me}
+								<span class="message-status">
+									{#if message.delivered_at}
+										<span class="ack">[ACK]</span>
+									{:else}
+										<span class="pend">[...]</span>
+									{/if}
+								</span>
+							{/if}
+						</div>
+						<div class="message-content">
+							<span class="prompt-arrow">{message.is_sent_by_me ? '>' : '<'}</span>
 							<p class="message-text">{message.content}</p>
-							<div class="message-footer">
-								<span class="message-time">{formatTime(message.sent_at)}</span>
-								{#if message.is_sent_by_me}
-									<span class="message-status">
-										{#if message.delivered_at}
-											<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-												<path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/>
-												<path d="M10.354 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-1-1a.5.5 0 0 1 .708-.708l.646.647 6.646-6.647a.5.5 0 0 1 .708 0z"/>
-											</svg>
-										{:else}
-											<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-												<path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-											</svg>
-										{/if}
-									</span>
-								{/if}
-							</div>
 						</div>
 					</div>
 				{/each}
+				<div class="log-end">--- END_LOG ---</div>
 			{/if}
 		</div>
 
 		<form class="message-input-container" onsubmit={handleSendMessage}>
-			<input
-				bind:value={messageInput}
-				type="text"
-				placeholder="Type a message..."
-				class="message-input"
-				autocomplete="off"
-				disabled={isSending}
-			/>
-			<button type="submit" class="send-button" disabled={!messageInput.trim() || isSending}>
-				{#if isSending}
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="spinner">
-						<circle cx="12" cy="12" r="10" stroke-width="3"/>
-					</svg>
-				{:else}
-					<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-						<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-					</svg>
-				{/if}
+			<button type="button" class="input-wrapper-btn" onclick={handleContainerClick} tabindex="-1">
+				<div class="input-wrapper">
+					<span class="prompt-symbol {isFocused ? 'active' : ''}">>_</span>
+					<input
+						bind:this={inputRef}
+						bind:value={messageInput}
+						type="text"
+						placeholder="Transmit packet..."
+						class="message-input"
+						autocomplete="off"
+						spellcheck="false"
+						disabled={isSending}
+						onfocus={() => (isFocused = true)}
+						onblur={() => (isFocused = false)}
+					/>
+				</div>
 			</button>
+			{#if isSending}
+				<div class="sending-indicator pulse">[TX...]</div>
+			{/if}
 		</form>
 	</div>
 {/if}
@@ -256,122 +257,136 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background-color: #36393f;
+		background-color: var(--bg-primary);
+		font-family: var(--font-mono);
 	}
 
 	.placeholder {
 		text-align: center;
-		color: #72767d;
+		color: var(--text-secondary);
 	}
 
-	.placeholder svg {
-		margin-bottom: 16px;
+	.placeholder .cursor {
+		font-size: 3rem;
+		color: var(--text-accent);
+		margin-bottom: 20px;
 	}
 
 	.placeholder h3 {
-		color: #dcddde;
-		font-size: 20px;
-		margin-bottom: 8px;
+		color: var(--text-primary);
+		font-size: 16px;
+		letter-spacing: 0.1em;
+		margin-bottom: 12px;
 	}
 
 	.placeholder p {
-		font-size: 14px;
+		font-size: 12px;
+		opacity: 0.7;
+		letter-spacing: 0.05em;
 	}
 
 	.chat-view {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		background-color: #36393f;
+		background-color: var(--bg-primary);
+		font-family: var(--font-mono);
 	}
 
 	.chat-header {
-		padding: 16px;
-		border-bottom: 1px solid #202225;
-		background-color: #2f3136;
+		padding: 16px 24px;
+		border-bottom: 1px solid var(--border-color);
+		background-color: var(--bg-secondary);
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 	}
 
-	.peer-info {
+	.peer-details {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 	}
 
-	.peer-avatar img,
-	.peer-avatar .avatar-placeholder {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-	}
-
-	.avatar-placeholder {
-		background: linear-gradient(135deg, #5865f2 0%, #7289da 100%);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		color: #fff;
-		font-size: 18px;
-		font-weight: 600;
+	.label {
+		color: var(--text-secondary);
+		font-size: 10px;
+		letter-spacing: 0.1em;
 	}
 
 	.peer-details h2 {
-		color: #fff;
-		font-size: 18px;
-		margin: 0 0 4px 0;
-		font-weight: 600;
+		color: var(--text-primary);
+		font-size: 14px;
+		margin: 0;
+		font-weight: 500;
+		letter-spacing: 0.05em;
 	}
 
 	.peer-status {
-		font-size: 12px;
-		color: #72767d;
+		font-size: 10px;
+		color: var(--text-secondary);
+		letter-spacing: 0.05em;
 	}
 
 	.peer-status.online {
-		color: #3ba55d;
+		color: var(--text-accent);
+	}
+
+	.header-meta {
+		font-size: 10px;
+		color: var(--text-secondary);
 	}
 
 	.messages-container {
 		flex: 1;
 		overflow-y: auto;
-		padding: 16px;
+		padding: 24px;
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 8px;
 	}
 
 	.loading,
 	.no-messages {
-		text-align: center;
-		color: #72767d;
 		padding: 32px;
+		color: var(--text-secondary);
+		font-size: 12px;
+		letter-spacing: 0.05em;
+	}
+
+	.log-start,
+	.log-end {
+		color: var(--border-hover);
+		font-size: 10px;
+		text-align: center;
+		margin: 16px 0;
+		letter-spacing: 0.1em;
 	}
 
 	.date-separator {
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 16px 0;
+		margin: 24px 0 16px 0;
 	}
 
 	.date-separator span {
-		background-color: #2f3136;
-		color: #72767d;
-		padding: 4px 12px;
-		border-radius: 12px;
-		font-size: 12px;
-		font-weight: 500;
+		color: var(--text-secondary);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		border-bottom: 1px solid var(--border-hover);
+		padding-bottom: 2px;
 	}
 
 	.message {
 		display: flex;
-		margin-bottom: 2px;
-		animation: slideIn 0.2s ease-out;
+		flex-direction: column;
+		margin-bottom: 12px;
+		animation: slideIn 0.15s ease-out;
 	}
 
 	@keyframes slideIn {
 		from {
 			opacity: 0;
-			transform: translateY(10px);
+			transform: translateY(4px);
 		}
 		to {
 			opacity: 1;
@@ -379,141 +394,137 @@
 		}
 	}
 
-	.message.sent {
-		justify-content: flex-end;
-	}
-
-	.message.received {
-		justify-content: flex-start;
-	}
-
-	.message-bubble {
-		max-width: 60%;
-		padding: 8px 12px;
-		border-radius: 18px;
-		position: relative;
-	}
-
-	.message.received .message-bubble {
-		background-color: #40444b;
-		color: #dcddde;
-		border-bottom-left-radius: 4px;
-	}
-
-	.message.sent .message-bubble {
-		background-color: #5865f2;
-		color: #fff;
-		border-bottom-right-radius: 4px;
-	}
-
-	.message-text {
-		margin: 0 0 4px 0;
-		word-wrap: break-word;
-		font-size: 15px;
-		line-height: 1.4;
-	}
-
-	.message-footer {
+	.message-meta {
 		display: flex;
 		align-items: center;
-		gap: 4px;
-		justify-content: flex-end;
+		gap: 8px;
+		font-size: 10px;
+		color: var(--text-secondary);
+		margin-bottom: 4px;
 	}
 
-	.message-time {
-		font-size: 11px;
+	.message.sent .message-meta {
+		color: var(--text-accent);
 		opacity: 0.7;
 	}
 
-	.message-status {
-		display: flex;
-		align-items: center;
-		opacity: 0.8;
+	.message-author {
+		font-weight: bold;
 	}
 
-	.message-status svg {
-		width: 14px;
-		height: 14px;
+	.message-status {
+		margin-left: 4px;
+	}
+
+	.message-status .ack {
+		color: var(--text-accent);
+	}
+
+	.message-content {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+	}
+
+	.prompt-arrow {
+		color: var(--text-secondary);
+		margin-top: 1px;
+	}
+
+	.message.sent .prompt-arrow {
+		color: var(--text-accent);
+	}
+
+	.message-text {
+		margin: 0;
+		word-wrap: break-word;
+		font-size: 13px;
+		line-height: 1.5;
+		color: var(--text-primary);
+		font-family: var(--font-sans);
+	}
+
+	.message.received .message-text {
+		color: #e0e0e0;
 	}
 
 	.message-input-container {
-		padding: 16px;
-		background-color: #2f3136;
-		border-top: 1px solid #202225;
+		padding: 20px 24px;
+		background-color: var(--bg-primary);
+		border-top: 1px solid var(--border-color);
 		display: flex;
-		gap: 8px;
+		align-items: center;
+		gap: 16px;
+		cursor: text;
+	}
+
+	.input-wrapper {
+		flex: 1;
+		display: flex;
+		align-items: center;
+	}
+
+	.prompt-symbol {
+		color: var(--text-secondary);
+		margin-right: 12px;
+		font-weight: bold;
+		font-size: 14px;
+		transition: color 0.15s ease;
+	}
+
+	.prompt-symbol.active {
+		color: var(--text-accent);
 	}
 
 	.message-input {
 		flex: 1;
-		padding: 12px 16px;
-		background-color: #40444b;
+		background: transparent;
 		border: none;
-		border-radius: 8px;
-		color: #dcddde;
-		font-size: 14px;
-	}
-
-	.message-input:focus {
+		color: var(--text-primary);
+		font-family: var(--font-mono);
+		font-size: 13px;
 		outline: none;
-		background-color: #484c52;
+		letter-spacing: 0.05em;
 	}
 
 	.message-input:disabled {
 		opacity: 0.5;
-		cursor: not-allowed;
 	}
 
-	.send-button {
-		padding: 12px 20px;
-		background-color: #5865f2;
-		border: none;
-		border-radius: 8px;
-		color: #fff;
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		transition: background-color 0.15s ease;
+	.sending-indicator {
+		color: var(--text-accent);
+		font-size: 11px;
+		letter-spacing: 0.1em;
 	}
 
-	.send-button:hover:not(:disabled) {
-		background-color: #4752c4;
+	.pulse {
+		animation: pulse 1.5s infinite ease-in-out;
 	}
 
-	.send-button:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.spinner {
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		from {
-			transform: rotate(0deg);
+	@keyframes pulse {
+		0%,
+		100% {
+			opacity: 0.4;
 		}
-		to {
-			transform: rotate(360deg);
+		50% {
+			opacity: 1;
 		}
 	}
 
-	/* Scrollbar styling */
+	/* Scrollbar styling for chat container */
 	.messages-container::-webkit-scrollbar {
-		width: 8px;
+		width: 6px;
 	}
 
 	.messages-container::-webkit-scrollbar-track {
-		background: #2f3136;
+		background: transparent;
 	}
 
 	.messages-container::-webkit-scrollbar-thumb {
-		background: #202225;
-		border-radius: 4px;
+		background: var(--border-color);
 	}
 
 	.messages-container::-webkit-scrollbar-thumb:hover {
-		background: #1a1c1e;
+		background: var(--border-hover);
 	}
 </style>
