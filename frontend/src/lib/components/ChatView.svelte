@@ -15,7 +15,7 @@
 	let messageInput = $state('');
 	let isLoading = $state(false);
 	let isSending = $state(false);
-	let chatContainer: HTMLDivElement;
+	let chatContainer = $state<HTMLDivElement | null>(null);
 	let currentPeer = $state<Peer | null>(null);
 	let inputRef = $state<HTMLInputElement | null>(null);
 	let isFocused = $state(false);
