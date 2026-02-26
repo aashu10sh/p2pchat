@@ -36,10 +36,10 @@ func (s *P2PChatServer) ReceiveMessage(ctx context.Context, msg *pb.Message) (*p
 		return &pb.MessageAck{Success: false, Error: err.Error()}, nil
 	}
 
-	s.eventBus.Publish(events.Event{
-		Type: "message_received",
-		Data: msg,
-	})
+	// s.eventBus.Publish(events.Event{
+	// 	Type: "message_received",
+	// 	Data: msg,
+	// })
 
 	return &pb.MessageAck{
 		Success:   true,
