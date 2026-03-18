@@ -59,6 +59,10 @@ func (d *Database) GetChatByPeers(selfPeerId string, theirPeerId string) (*Chat,
 func (d *Database) GetPeerByID(peerId string) (*Peer, error) {
 	var peer Peer
 
+	if peerId == "" {
+		return nil, errors.New("unknown user name")
+	}
+
 	err := d.Db.Where(&Peer{PeerId: peerId}).First(&peer).Error
 
 	if err != nil {

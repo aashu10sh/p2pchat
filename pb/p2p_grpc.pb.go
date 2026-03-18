@@ -19,9 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	P2PChatService_ReceiveMessage_FullMethodName = "/p2p.P2PChatService/ReceiveMessage"
-	P2PChatService_Ping_FullMethodName           = "/p2p.P2PChatService/Ping"
-	P2PChatService_GetPeerInfo_FullMethodName    = "/p2p.P2PChatService/GetPeerInfo"
+	P2PChatService_ReceiveMessage_FullMethodName       = "/p2p.P2PChatService/ReceiveMessage"
+	P2PChatService_Ping_FullMethodName                 = "/p2p.P2PChatService/Ping"
+	P2PChatService_GetPeerInfo_FullMethodName          = "/p2p.P2PChatService/GetPeerInfo"
+	P2PChatService_RecieveSignalingData_FullMethodName = "/p2p.P2PChatService/RecieveSignalingData"
 )
 
 // P2PChatServiceClient is the client API for P2PChatService service.
@@ -36,6 +37,9 @@ type P2PChatServiceClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// RPC for getting another peers info.
 	GetPeerInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PeerInfo, error)
+	// RPC for streaming messages to other nodes.
+	// rpc StreamMessages(Empty) returns (stream Message);
+	RecieveSignalingData(ctx context.Context, in *SignalingRequest, opts ...grpc.CallOption) (*SignalingResponse, error)
 }
 
 type p2PChatServiceClient struct {
@@ -76,6 +80,16 @@ func (c *p2PChatServiceClient) GetPeerInfo(ctx context.Context, in *Empty, opts 
 	return out, nil
 }
 
+func (c *p2PChatServiceClient) RecieveSignalingData(ctx context.Context, in *SignalingRequest, opts ...grpc.CallOption) (*SignalingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SignalingResponse)
+	err := c.cc.Invoke(ctx, P2PChatService_RecieveSignalingData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // P2PChatServiceServer is the server API for P2PChatService service.
 // All implementations must embed UnimplementedP2PChatServiceServer
 // for forward compatibility.
@@ -88,6 +102,9 @@ type P2PChatServiceServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// RPC for getting another peers info.
 	GetPeerInfo(context.Context, *Empty) (*PeerInfo, error)
+	// RPC for streaming messages to other nodes.
+	// rpc StreamMessages(Empty) returns (stream Message);
+	RecieveSignalingData(context.Context, *SignalingRequest) (*SignalingResponse, error)
 	mustEmbedUnimplementedP2PChatServiceServer()
 }
 
@@ -106,6 +123,9 @@ func (UnimplementedP2PChatServiceServer) Ping(context.Context, *PingRequest) (*P
 }
 func (UnimplementedP2PChatServiceServer) GetPeerInfo(context.Context, *Empty) (*PeerInfo, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPeerInfo not implemented")
+}
+func (UnimplementedP2PChatServiceServer) RecieveSignalingData(context.Context, *SignalingRequest) (*SignalingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecieveSignalingData not implemented")
 }
 func (UnimplementedP2PChatServiceServer) mustEmbedUnimplementedP2PChatServiceServer() {}
 func (UnimplementedP2PChatServiceServer) testEmbeddedByValue()                        {}
@@ -182,6 +202,24 @@ func _P2PChatService_GetPeerInfo_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _P2PChatService_RecieveSignalingData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignalingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PChatServiceServer).RecieveSignalingData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PChatService_RecieveSignalingData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PChatServiceServer).RecieveSignalingData(ctx, req.(*SignalingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // P2PChatService_ServiceDesc is the grpc.ServiceDesc for P2PChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -200,6 +238,10 @@ var P2PChatService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPeerInfo",
 			Handler:    _P2PChatService_GetPeerInfo_Handler,
+		},
+		{
+			MethodName: "RecieveSignalingData",
+			Handler:    _P2PChatService_RecieveSignalingData_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

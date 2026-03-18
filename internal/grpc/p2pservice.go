@@ -36,11 +36,6 @@ func (s *P2PChatServer) ReceiveMessage(ctx context.Context, msg *pb.Message) (*p
 		return &pb.MessageAck{Success: false, Error: err.Error()}, nil
 	}
 
-	// s.eventBus.Publish(events.Event{
-	// 	Type: "message_received",
-	// 	Data: msg,
-	// })
-
 	return &pb.MessageAck{
 		Success:   true,
 		MessageId: msg.Id,
@@ -73,4 +68,8 @@ func (s *P2PChatServer) Ping(ctx context.Context, pingRequest *pb.PingRequest) (
 		UserName:  self.UserName,
 		Timestamp: time.Now().Unix(),
 	}, nil
+}
+
+func (s *P2PChatServer) RecieveSignalingData(ctx context.Context, signalingRequest *pb.SignalingRequest) (*pb.SignalingResponse, error) {
+	return nil, nil
 }

@@ -33,16 +33,19 @@ func main() {
 	eventBus := events.NewEventBus()
 
 	peerManager := peer.NewManager(eventBus)
+
 	profileSvc := service.NewProfileService(database)
 	chatSvc := service.NewChatService(database, peerManager, profileSvc, eventBus)
+	peerSvc := service.NewPeerService(database)
 
 	// Get current profile for mDNS announcement
 	profile, err := profileSvc.GetCurrentProfile()
+
 	if err != nil {
 		log.Printf("Warning: No profile found. mDNS will not start. Create a profile first: %v", err)
 	}
 
-	httpServer := SetupHttpServer(embeddedFiles, profileSvc, database, chatSvc, eventBus)
+	httpServer := SetupHttpServer(embeddedFiles, profileSvc, peerSvc, database, chatSvc, eventBus)
 
 	go func() {
 		log.Printf("HTTP server listening on http://localhost:8000")
@@ -107,19 +110,21 @@ func main() {
 func SetupHttpServer(
 	frontendFiles embed.FS,
 	profileSvc *service.ProfileService,
+	peerSvc *service.PeerService,
 	database *db.Database,
 	chatSvc *service.ChatService,
 	eventBus *events.EventBus,
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	handler := api.NewAPIHandler(profileSvc, database, chatSvc, eventBus)
+	handler := api.NewAPIHandler(profileSvc, database, chatSvc, peerSvc, eventBus)
+
 	mux.HandleFunc("/api/profile/check", handler.CheckProfile)
 
 	mux.HandleFunc("/api/profile", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			panic("not yet implemented")
+			handler.GetPeerById(w, r)
 		case http.MethodPost:
 			handler.CreateProfile(w, r)
 		default:

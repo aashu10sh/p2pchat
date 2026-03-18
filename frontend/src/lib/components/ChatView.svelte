@@ -92,6 +92,10 @@
 		);
 	}
 
+	async function handleICEExchange(e: Event) {
+		e.preventDefault();
+	}
+
 	function scrollToBottom() {
 		if (chatContainer) {
 			chatContainer.scrollTop = chatContainer.scrollHeight;
@@ -178,6 +182,7 @@
 			<div class="header-meta">
 				<span class="label">ID:</span>
 				{currentPeer?.peer_id.substring(0, 8)}...
+				<a href="/call?peer_id={currentPeer?.peer_id}" target="_blank">call</a>
 			</div>
 		</div>
 

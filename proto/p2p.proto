@@ -13,6 +13,7 @@ service P2PChatService {
   rpc GetPeerInfo(Empty) returns (PeerInfo);
   // RPC for streaming messages to other nodes.
   // rpc StreamMessages(Empty) returns (stream Message);
+  rpc RecieveSignalingData(SignalingRequest) returns (SignalingResponse);
 }
 
 message Empty {}
@@ -55,4 +56,14 @@ message PeerInfo {
   string user_name = 2;
   string wifi_name = 3;
   int64 last_seen = 4;
+}
+
+message SignalingRequest {
+  string sdp = 1;
+  string type = 2;
+  string to = 3;
+}
+
+message SignalingResponse {
+  bool accepted = 1;
 }

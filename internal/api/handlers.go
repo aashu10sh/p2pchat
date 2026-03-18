@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 type APIHandler struct {
 	profileSvc *service.ProfileService
+	peerSvc    *service.PeerService
 	database   *db.Database
 	chatSvc    *service.ChatService
 	eventBus   *events.EventBus
@@ -24,12 +26,14 @@ func NewAPIHandler(
 	profileSvc *service.ProfileService,
 	database *db.Database,
 	chatSvc *service.ChatService,
+	peerSvc *service.PeerService,
 	eventBus *events.EventBus,
 ) *APIHandler {
 	return &APIHandler{
 		profileSvc: profileSvc,
 		database:   database,
 		chatSvc:    chatSvc,
+		peerSvc:    peerSvc,
 		eventBus:   eventBus,
 	}
 }
@@ -42,6 +46,33 @@ func respondJSON(w http.ResponseWriter, status int, data any) {
 
 func respondError(w http.ResponseWriter, status int, message string) {
 	respondJSON(w, status, ErrorResponse{Error: message})
+}
+
+func (h *APIHandler) GetPeerById(w http.ResponseWriter, r *http.Request) {
+	peerID := r.URL.Query().Get("peer_id")
+	log.Println("peerid is" + peerID)
+	if peerID == "" {
+		respondError(w, http.StatusNotFound, "peer not found")
+		return
+	}
+	peer, err := h.peerSvc.GetPeerByID(peerID)
+
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondJSON(w, 200, peer)
+}
+
+func (h *APIHandler) HandleSignaling(w http.ResponseWriter, r *http.Request) {
+	var req SignalingMessageRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 }
 
 func (h *APIHandler) CheckProfile(w http.ResponseWriter, r *http.Request) {

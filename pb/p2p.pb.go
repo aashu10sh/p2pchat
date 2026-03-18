@@ -438,6 +438,110 @@ func (x *PeerInfo) GetLastSeen() int64 {
 	return 0
 }
 
+type SignalingRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sdp           string                 `protobuf:"bytes,1,opt,name=sdp,proto3" json:"sdp,omitempty"`
+	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	To            string                 `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalingRequest) Reset() {
+	*x = SignalingRequest{}
+	mi := &file_p2p_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalingRequest) ProtoMessage() {}
+
+func (x *SignalingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalingRequest.ProtoReflect.Descriptor instead.
+func (*SignalingRequest) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SignalingRequest) GetSdp() string {
+	if x != nil {
+		return x.Sdp
+	}
+	return ""
+}
+
+func (x *SignalingRequest) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *SignalingRequest) GetTo() string {
+	if x != nil {
+		return x.To
+	}
+	return ""
+}
+
+type SignalingResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Accepted      bool                   `protobuf:"varint,1,opt,name=accepted,proto3" json:"accepted,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SignalingResponse) Reset() {
+	*x = SignalingResponse{}
+	mi := &file_p2p_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SignalingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SignalingResponse) ProtoMessage() {}
+
+func (x *SignalingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SignalingResponse.ProtoReflect.Descriptor instead.
+func (*SignalingResponse) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SignalingResponse) GetAccepted() bool {
+	if x != nil {
+		return x.Accepted
+	}
+	return false
+}
+
 var File_p2p_proto protoreflect.FileDescriptor
 
 const file_p2p_proto_rawDesc = "" +
@@ -471,16 +575,23 @@ const file_p2p_proto_rawDesc = "" +
 	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1b\n" +
 	"\tuser_name\x18\x02 \x01(\tR\buserName\x12\x1b\n" +
 	"\twifi_name\x18\x03 \x01(\tR\bwifiName\x12\x1b\n" +
-	"\tlast_seen\x18\x04 \x01(\x03R\blastSeen*,\n" +
+	"\tlast_seen\x18\x04 \x01(\x03R\blastSeen\"H\n" +
+	"\x10SignalingRequest\x12\x10\n" +
+	"\x03sdp\x18\x01 \x01(\tR\x03sdp\x12\x12\n" +
+	"\x04type\x18\x02 \x01(\tR\x04type\x12\x0e\n" +
+	"\x02to\x18\x03 \x01(\tR\x02to\"/\n" +
+	"\x11SignalingResponse\x12\x1a\n" +
+	"\baccepted\x18\x01 \x01(\bR\baccepted*,\n" +
 	"\vMessageType\x12\b\n" +
 	"\x04TEXT\x10\x00\x12\t\n" +
 	"\x05IMAGE\x10\x01\x12\b\n" +
-	"\x04FILE\x10\x022\x98\x01\n" +
+	"\x04FILE\x10\x022\xdf\x01\n" +
 	"\x0eP2PChatService\x12/\n" +
 	"\x0eReceiveMessage\x12\f.p2p.Message\x1a\x0f.p2p.MessageAck\x12+\n" +
 	"\x04Ping\x12\x10.p2p.PingRequest\x1a\x11.p2p.PingResponse\x12(\n" +
 	"\vGetPeerInfo\x12\n" +
-	".p2p.Empty\x1a\r.p2p.PeerInfoB\x0fZ\rp2pchat2.0/pbb\x06proto3"
+	".p2p.Empty\x1a\r.p2p.PeerInfo\x12E\n" +
+	"\x14RecieveSignalingData\x12\x15.p2p.SignalingRequest\x1a\x16.p2p.SignalingResponseB\x0fZ\rp2pchat2.0/pbb\x06proto3"
 
 var (
 	file_p2p_proto_rawDescOnce sync.Once
@@ -495,26 +606,30 @@ func file_p2p_proto_rawDescGZIP() []byte {
 }
 
 var file_p2p_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_p2p_proto_goTypes = []any{
-	(MessageType)(0),     // 0: p2p.MessageType
-	(*Empty)(nil),        // 1: p2p.Empty
-	(*Message)(nil),      // 2: p2p.Message
-	(*MessageAck)(nil),   // 3: p2p.MessageAck
-	(*PingRequest)(nil),  // 4: p2p.PingRequest
-	(*PingResponse)(nil), // 5: p2p.PingResponse
-	(*PeerInfo)(nil),     // 6: p2p.PeerInfo
+	(MessageType)(0),          // 0: p2p.MessageType
+	(*Empty)(nil),             // 1: p2p.Empty
+	(*Message)(nil),           // 2: p2p.Message
+	(*MessageAck)(nil),        // 3: p2p.MessageAck
+	(*PingRequest)(nil),       // 4: p2p.PingRequest
+	(*PingResponse)(nil),      // 5: p2p.PingResponse
+	(*PeerInfo)(nil),          // 6: p2p.PeerInfo
+	(*SignalingRequest)(nil),  // 7: p2p.SignalingRequest
+	(*SignalingResponse)(nil), // 8: p2p.SignalingResponse
 }
 var file_p2p_proto_depIdxs = []int32{
 	0, // 0: p2p.Message.type:type_name -> p2p.MessageType
 	2, // 1: p2p.P2PChatService.ReceiveMessage:input_type -> p2p.Message
 	4, // 2: p2p.P2PChatService.Ping:input_type -> p2p.PingRequest
 	1, // 3: p2p.P2PChatService.GetPeerInfo:input_type -> p2p.Empty
-	3, // 4: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
-	5, // 5: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
-	6, // 6: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	7, // 4: p2p.P2PChatService.RecieveSignalingData:input_type -> p2p.SignalingRequest
+	3, // 5: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
+	5, // 6: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
+	6, // 7: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
+	8, // 8: p2p.P2PChatService.RecieveSignalingData:output_type -> p2p.SignalingResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -531,7 +646,7 @@ func file_p2p_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_p2p_proto_rawDesc), len(file_p2p_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

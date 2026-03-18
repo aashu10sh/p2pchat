@@ -11,6 +11,25 @@ export default class PeerService {
 	private eventSource: EventSource | null = null;
 	private messageCallback: ((message: Message) => void) | null = null;
 
+	async fetchPeer(peerId: string): Promise<Result<Peer, Error>> {
+		try {
+			const response = await fetch(`http://localhost:8000/api/profile?peer_id=${peerId}`, {
+				method: 'GET'
+			});
+			if (response.ok) {
+				const peer = (await response.json()) as Peer;
+				return ok(peer);
+			} else {
+				const error = (await response.json()) as Error;
+				return err(error);
+			}
+		} catch (e) {
+			return err({
+				error: 'Failed to fetch peer' + String(e)
+			});
+		}
+	}
+
 	async fetchPeers(): Promise<Result<Peer[], Error>> {
 		try {
 			const response = await fetch('http://localhost:8000/api/peers', {

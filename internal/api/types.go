@@ -65,3 +65,9 @@ type SendMessageResponse struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+type SignalingMessageRequest struct {
+	Sdp  string `json:"sdp"`
+	Type string `json:"type"`
+	To   string `json:"to"`
+}

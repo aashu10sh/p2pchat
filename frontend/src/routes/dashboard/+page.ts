@@ -7,9 +7,9 @@ export const load: PageLoad = async () => {
 	const profileService = new ProfileService();
 	const userResult = await profileService.getCurrentUser();
 
-    if (userResult.isErr()) {
-        goto("/new");
-    }
+	if (userResult.isErr()) {
+		goto('/new');
+	}
 
 	let user = userResult._unsafeUnwrap();
 
