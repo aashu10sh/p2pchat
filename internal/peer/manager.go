@@ -77,3 +77,16 @@ func (m *Manager) SendMessage(peerID string, msg *pb.Message) error {
 	_, err := peer.Client.ReceiveMessage(context.Background(), msg)
 	return err
 }
+
+func (m *Manager) SendSignalingMessage(peerID string, signalingMessage *pb.SignalingRequest) error {
+	m.mu.RLock()
+	peer := m.peers[peerID]
+	m.mu.Unlock()
+
+	if peer == nil {
+		return fmt.Errorf("failed to connect to peer")
+	}
+
+	_, err := peer.Client.RecieveSignalingData(context.Background(), signalingMessage)
+	return err
+}

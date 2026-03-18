@@ -130,6 +130,28 @@ func (s *ChatService) SendMessage(toPeerID, content, msgType string) (string, er
 	return messageID, nil
 }
 
+func (s *ChatService) SendSignalingDataToClient(toPeerID, sdp, msgtype string) (string, error) {
+	sig, err := s.db.SaveSignalingData(toPeerID, "self", sdp, false)
+
+	if err != nil {
+		return "", err
+	}
+
+	sr := pb.SignalingRequest{
+		Sdp:  sdp,
+		Type: msgtype,
+		To:   toPeerID,
+		Uuid: sig.UUID,
+	}
+
+	err = s.peerMgr.SendSignalingMessage(toPeerID, &sr)
+
+	if err != nil {
+		return "", err
+	}
+	return sig.UUID, nil
+}
+
 // SaveIncomingMessage - saves message received from peer via gRPC
 func (s *ChatService) SaveIncomingMessage(msg *pb.Message) error {
 	profile, err := s.profileSvc.GetCurrentProfile()

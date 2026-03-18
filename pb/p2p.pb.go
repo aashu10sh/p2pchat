@@ -443,6 +443,7 @@ type SignalingRequest struct {
 	Sdp           string                 `protobuf:"bytes,1,opt,name=sdp,proto3" json:"sdp,omitempty"`
 	Type          string                 `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	To            string                 `protobuf:"bytes,3,opt,name=to,proto3" json:"to,omitempty"`
+	Uuid          string                 `protobuf:"bytes,4,opt,name=uuid,proto3" json:"uuid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -494,6 +495,13 @@ func (x *SignalingRequest) GetType() string {
 func (x *SignalingRequest) GetTo() string {
 	if x != nil {
 		return x.To
+	}
+	return ""
+}
+
+func (x *SignalingRequest) GetUuid() string {
+	if x != nil {
+		return x.Uuid
 	}
 	return ""
 }
@@ -575,11 +583,12 @@ const file_p2p_proto_rawDesc = "" +
 	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1b\n" +
 	"\tuser_name\x18\x02 \x01(\tR\buserName\x12\x1b\n" +
 	"\twifi_name\x18\x03 \x01(\tR\bwifiName\x12\x1b\n" +
-	"\tlast_seen\x18\x04 \x01(\x03R\blastSeen\"H\n" +
+	"\tlast_seen\x18\x04 \x01(\x03R\blastSeen\"\\\n" +
 	"\x10SignalingRequest\x12\x10\n" +
 	"\x03sdp\x18\x01 \x01(\tR\x03sdp\x12\x12\n" +
 	"\x04type\x18\x02 \x01(\tR\x04type\x12\x0e\n" +
-	"\x02to\x18\x03 \x01(\tR\x02to\"/\n" +
+	"\x02to\x18\x03 \x01(\tR\x02to\x12\x12\n" +
+	"\x04uuid\x18\x04 \x01(\tR\x04uuid\"/\n" +
 	"\x11SignalingResponse\x12\x1a\n" +
 	"\baccepted\x18\x01 \x01(\bR\baccepted*,\n" +
 	"\vMessageType\x12\b\n" +

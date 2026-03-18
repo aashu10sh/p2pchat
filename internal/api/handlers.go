@@ -286,6 +286,29 @@ func (h *APIHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *APIHandler) HandleIncomingSDPExchange(w http.ResponseWriter, r *http.Request) {
+	var req SignalingMessageRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid signaling message")
+	}
+
+	if req.Sdp == "" || req.To == "" || req.Type == "" {
+		respondError(w, http.StatusBadRequest, "bad request, need all fields")
+	}
+
+	confirmation, err := h.chatSvc.SendSignalingDataToClient(req.To, req.Sdp, req.Type)
+
+	if err != nil && confirmation != "success" {
+		respondError(w, http.StatusInternalServerError, "failed sending sdp data to the client")
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]string{
+		"sdp_sent_to_client": "ok",
+		"uuid":               confirmation,
+	})
+}
+
 func respondEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, data interface{}) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {

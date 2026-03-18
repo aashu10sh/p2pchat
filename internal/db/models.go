@@ -53,3 +53,12 @@ type Message struct {
 	// computed field
 	IsSentByMe bool `gorm:"-" json:"is_sent_by_me"`
 }
+
+type Signals struct {
+	gorm.Model
+	UUID       string `json:"uuid"`
+	FromPeerId string `json:"from_peer_id"`
+	ToPeerId   string `json:"to_peer_id"`
+	Sdp        string `json:"sdp"`
+	Accepted   bool   `json:"accepted"`
+}

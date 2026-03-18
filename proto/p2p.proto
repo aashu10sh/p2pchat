@@ -62,6 +62,7 @@ message SignalingRequest {
   string sdp = 1;
   string type = 2;
   string to = 3;
+  string uuid = 4;
 }
 
 message SignalingResponse {

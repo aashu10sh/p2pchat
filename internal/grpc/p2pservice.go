@@ -71,5 +71,12 @@ func (s *P2PChatServer) Ping(ctx context.Context, pingRequest *pb.PingRequest) (
 }
 
 func (s *P2PChatServer) RecieveSignalingData(ctx context.Context, signalingRequest *pb.SignalingRequest) (*pb.SignalingResponse, error) {
+	s.eventBus.Publish(events.Event{
+		Type: signalingRequest.GetType(),
+		Data: map[string]string{
+			"sdp":  signalingRequest.Sdp,
+			"uuid": signalingRequest.Uuid,
+		},
+	})
 	return nil, nil
 }

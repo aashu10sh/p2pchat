@@ -33,15 +33,15 @@
 
 		console.log(pc.localDescription)
 
-		// const response = await fetch('/call/offer', {
-		// 	method: 'POST',
-		// 	headers: { 'Content-Type': 'application/json' },
-		// 	body: JSON.stringify({ sdp: pc.localDescription, to })
-		// });
+		const response = await fetch('/call/offer', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ sdp: pc.localDescription, to })
+		});
 
-		// const { answer } = await response.json();
+		const { answer } = await response.json();
 
-		// await pc.setRemoteDescription(new RTCSessionDescription(answer));
+		await pc.setRemoteDescription(new RTCSessionDescription(answer));
 	}
 </script>
 

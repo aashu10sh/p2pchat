@@ -152,6 +152,10 @@ func SetupHttpServer(
 		}
 	})
 
+	mux.HandleFunc("/api/call/offer", func(w http.ResponseWriter, r *http.Request) {
+		handler.HandleIncomingSDPExchange(w, r)
+	})
+
 	frontendFS, _ := fs.Sub(frontendFiles, "frontend/build")
 	mux.Handle("/", http.FileServer(http.FS(frontendFS)))
 
