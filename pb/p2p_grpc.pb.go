@@ -19,10 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	P2PChatService_ReceiveMessage_FullMethodName       = "/p2p.P2PChatService/ReceiveMessage"
-	P2PChatService_Ping_FullMethodName                 = "/p2p.P2PChatService/Ping"
-	P2PChatService_GetPeerInfo_FullMethodName          = "/p2p.P2PChatService/GetPeerInfo"
-	P2PChatService_RecieveSignalingData_FullMethodName = "/p2p.P2PChatService/RecieveSignalingData"
+	P2PChatService_ReceiveMessage_FullMethodName               = "/p2p.P2PChatService/ReceiveMessage"
+	P2PChatService_Ping_FullMethodName                         = "/p2p.P2PChatService/Ping"
+	P2PChatService_GetPeerInfo_FullMethodName                  = "/p2p.P2PChatService/GetPeerInfo"
+	P2PChatService_ReceiveVideoCallOffer_FullMethodName        = "/p2p.P2PChatService/ReceiveVideoCallOffer"
+	P2PChatService_ReceiveVideoCallAnswer_FullMethodName       = "/p2p.P2PChatService/ReceiveVideoCallAnswer"
+	P2PChatService_ReceiveVideoCallICECandidate_FullMethodName = "/p2p.P2PChatService/ReceiveVideoCallICECandidate"
+	P2PChatService_ReceiveVideoCallHangup_FullMethodName       = "/p2p.P2PChatService/ReceiveVideoCallHangup"
 )
 
 // P2PChatServiceClient is the client API for P2PChatService service.
@@ -37,9 +40,11 @@ type P2PChatServiceClient interface {
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	// RPC for getting another peers info.
 	GetPeerInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*PeerInfo, error)
-	// RPC for streaming messages to other nodes.
-	// rpc StreamMessages(Empty) returns (stream Message);
-	RecieveSignalingData(ctx context.Context, in *SignalingRequest, opts ...grpc.CallOption) (*SignalingResponse, error)
+	// Video call signaling RPCs — backend acts as passthrough, routing these between peers.
+	ReceiveVideoCallOffer(ctx context.Context, in *VideoCallOffer, opts ...grpc.CallOption) (*VideoCallAck, error)
+	ReceiveVideoCallAnswer(ctx context.Context, in *VideoCallAnswer, opts ...grpc.CallOption) (*VideoCallAck, error)
+	ReceiveVideoCallICECandidate(ctx context.Context, in *VideoCallICECandidate, opts ...grpc.CallOption) (*VideoCallAck, error)
+	ReceiveVideoCallHangup(ctx context.Context, in *VideoCallHangup, opts ...grpc.CallOption) (*VideoCallAck, error)
 }
 
 type p2PChatServiceClient struct {
@@ -80,10 +85,40 @@ func (c *p2PChatServiceClient) GetPeerInfo(ctx context.Context, in *Empty, opts 
 	return out, nil
 }
 
-func (c *p2PChatServiceClient) RecieveSignalingData(ctx context.Context, in *SignalingRequest, opts ...grpc.CallOption) (*SignalingResponse, error) {
+func (c *p2PChatServiceClient) ReceiveVideoCallOffer(ctx context.Context, in *VideoCallOffer, opts ...grpc.CallOption) (*VideoCallAck, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SignalingResponse)
-	err := c.cc.Invoke(ctx, P2PChatService_RecieveSignalingData_FullMethodName, in, out, cOpts...)
+	out := new(VideoCallAck)
+	err := c.cc.Invoke(ctx, P2PChatService_ReceiveVideoCallOffer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PChatServiceClient) ReceiveVideoCallAnswer(ctx context.Context, in *VideoCallAnswer, opts ...grpc.CallOption) (*VideoCallAck, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VideoCallAck)
+	err := c.cc.Invoke(ctx, P2PChatService_ReceiveVideoCallAnswer_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PChatServiceClient) ReceiveVideoCallICECandidate(ctx context.Context, in *VideoCallICECandidate, opts ...grpc.CallOption) (*VideoCallAck, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VideoCallAck)
+	err := c.cc.Invoke(ctx, P2PChatService_ReceiveVideoCallICECandidate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *p2PChatServiceClient) ReceiveVideoCallHangup(ctx context.Context, in *VideoCallHangup, opts ...grpc.CallOption) (*VideoCallAck, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VideoCallAck)
+	err := c.cc.Invoke(ctx, P2PChatService_ReceiveVideoCallHangup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,9 +137,11 @@ type P2PChatServiceServer interface {
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	// RPC for getting another peers info.
 	GetPeerInfo(context.Context, *Empty) (*PeerInfo, error)
-	// RPC for streaming messages to other nodes.
-	// rpc StreamMessages(Empty) returns (stream Message);
-	RecieveSignalingData(context.Context, *SignalingRequest) (*SignalingResponse, error)
+	// Video call signaling RPCs — backend acts as passthrough, routing these between peers.
+	ReceiveVideoCallOffer(context.Context, *VideoCallOffer) (*VideoCallAck, error)
+	ReceiveVideoCallAnswer(context.Context, *VideoCallAnswer) (*VideoCallAck, error)
+	ReceiveVideoCallICECandidate(context.Context, *VideoCallICECandidate) (*VideoCallAck, error)
+	ReceiveVideoCallHangup(context.Context, *VideoCallHangup) (*VideoCallAck, error)
 	mustEmbedUnimplementedP2PChatServiceServer()
 }
 
@@ -124,8 +161,17 @@ func (UnimplementedP2PChatServiceServer) Ping(context.Context, *PingRequest) (*P
 func (UnimplementedP2PChatServiceServer) GetPeerInfo(context.Context, *Empty) (*PeerInfo, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPeerInfo not implemented")
 }
-func (UnimplementedP2PChatServiceServer) RecieveSignalingData(context.Context, *SignalingRequest) (*SignalingResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RecieveSignalingData not implemented")
+func (UnimplementedP2PChatServiceServer) ReceiveVideoCallOffer(context.Context, *VideoCallOffer) (*VideoCallAck, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReceiveVideoCallOffer not implemented")
+}
+func (UnimplementedP2PChatServiceServer) ReceiveVideoCallAnswer(context.Context, *VideoCallAnswer) (*VideoCallAck, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReceiveVideoCallAnswer not implemented")
+}
+func (UnimplementedP2PChatServiceServer) ReceiveVideoCallICECandidate(context.Context, *VideoCallICECandidate) (*VideoCallAck, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReceiveVideoCallICECandidate not implemented")
+}
+func (UnimplementedP2PChatServiceServer) ReceiveVideoCallHangup(context.Context, *VideoCallHangup) (*VideoCallAck, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReceiveVideoCallHangup not implemented")
 }
 func (UnimplementedP2PChatServiceServer) mustEmbedUnimplementedP2PChatServiceServer() {}
 func (UnimplementedP2PChatServiceServer) testEmbeddedByValue()                        {}
@@ -202,20 +248,74 @@ func _P2PChatService_GetPeerInfo_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _P2PChatService_RecieveSignalingData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SignalingRequest)
+func _P2PChatService_ReceiveVideoCallOffer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VideoCallOffer)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(P2PChatServiceServer).RecieveSignalingData(ctx, in)
+		return srv.(P2PChatServiceServer).ReceiveVideoCallOffer(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: P2PChatService_RecieveSignalingData_FullMethodName,
+		FullMethod: P2PChatService_ReceiveVideoCallOffer_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(P2PChatServiceServer).RecieveSignalingData(ctx, req.(*SignalingRequest))
+		return srv.(P2PChatServiceServer).ReceiveVideoCallOffer(ctx, req.(*VideoCallOffer))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PChatService_ReceiveVideoCallAnswer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VideoCallAnswer)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PChatServiceServer).ReceiveVideoCallAnswer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PChatService_ReceiveVideoCallAnswer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PChatServiceServer).ReceiveVideoCallAnswer(ctx, req.(*VideoCallAnswer))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PChatService_ReceiveVideoCallICECandidate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VideoCallICECandidate)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PChatServiceServer).ReceiveVideoCallICECandidate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PChatService_ReceiveVideoCallICECandidate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PChatServiceServer).ReceiveVideoCallICECandidate(ctx, req.(*VideoCallICECandidate))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _P2PChatService_ReceiveVideoCallHangup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VideoCallHangup)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(P2PChatServiceServer).ReceiveVideoCallHangup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: P2PChatService_ReceiveVideoCallHangup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(P2PChatServiceServer).ReceiveVideoCallHangup(ctx, req.(*VideoCallHangup))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -240,8 +340,20 @@ var P2PChatService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _P2PChatService_GetPeerInfo_Handler,
 		},
 		{
-			MethodName: "RecieveSignalingData",
-			Handler:    _P2PChatService_RecieveSignalingData_Handler,
+			MethodName: "ReceiveVideoCallOffer",
+			Handler:    _P2PChatService_ReceiveVideoCallOffer_Handler,
+		},
+		{
+			MethodName: "ReceiveVideoCallAnswer",
+			Handler:    _P2PChatService_ReceiveVideoCallAnswer_Handler,
+		},
+		{
+			MethodName: "ReceiveVideoCallICECandidate",
+			Handler:    _P2PChatService_ReceiveVideoCallICECandidate_Handler,
+		},
+		{
+			MethodName: "ReceiveVideoCallHangup",
+			Handler:    _P2PChatService_ReceiveVideoCallHangup_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

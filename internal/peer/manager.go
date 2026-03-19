@@ -78,15 +78,54 @@ func (m *Manager) SendMessage(peerID string, msg *pb.Message) error {
 	return err
 }
 
-func (m *Manager) SendSignalingMessage(peerID string, signalingMessage *pb.SignalingRequest) error {
+func (m *Manager) SendVideoCallOffer(peerID string, offer *pb.VideoCallOffer) error {
 	m.mu.RLock()
 	peer := m.peers[peerID]
-	m.mu.Unlock()
+	m.mu.RUnlock()
 
 	if peer == nil {
-		return fmt.Errorf("failed to connect to peer")
+		return fmt.Errorf("peer not connected")
 	}
 
-	_, err := peer.Client.RecieveSignalingData(context.Background(), signalingMessage)
+	_, err := peer.Client.ReceiveVideoCallOffer(context.Background(), offer)
+	return err
+}
+
+func (m *Manager) SendVideoCallAnswer(peerID string, answer *pb.VideoCallAnswer) error {
+	m.mu.RLock()
+	peer := m.peers[peerID]
+	m.mu.RUnlock()
+
+	if peer == nil {
+		return fmt.Errorf("peer not connected")
+	}
+
+	_, err := peer.Client.ReceiveVideoCallAnswer(context.Background(), answer)
+	return err
+}
+
+func (m *Manager) SendVideoCallICECandidate(peerID string, ice *pb.VideoCallICECandidate) error {
+	m.mu.RLock()
+	peer := m.peers[peerID]
+	m.mu.RUnlock()
+
+	if peer == nil {
+		return fmt.Errorf("peer not connected")
+	}
+
+	_, err := peer.Client.ReceiveVideoCallICECandidate(context.Background(), ice)
+	return err
+}
+
+func (m *Manager) SendVideoCallHangup(peerID string, hangup *pb.VideoCallHangup) error {
+	m.mu.RLock()
+	peer := m.peers[peerID]
+	m.mu.RUnlock()
+
+	if peer == nil {
+		return fmt.Errorf("peer not connected")
+	}
+
+	_, err := peer.Client.ReceiveVideoCallHangup(context.Background(), hangup)
 	return err
 }

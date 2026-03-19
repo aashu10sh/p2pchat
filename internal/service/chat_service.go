@@ -130,28 +130,6 @@ func (s *ChatService) SendMessage(toPeerID, content, msgType string) (string, er
 	return messageID, nil
 }
 
-func (s *ChatService) SendSignalingDataToClient(toPeerID, sdp, msgtype string) (string, error) {
-	sig, err := s.db.SaveSignalingData(toPeerID, "self", sdp, false)
-
-	if err != nil {
-		return "", err
-	}
-
-	sr := pb.SignalingRequest{
-		Sdp:  sdp,
-		Type: msgtype,
-		To:   toPeerID,
-		Uuid: sig.UUID,
-	}
-
-	err = s.peerMgr.SendSignalingMessage(toPeerID, &sr)
-
-	if err != nil {
-		return "", err
-	}
-	return sig.UUID, nil
-}
-
 // SaveIncomingMessage - saves message received from peer via gRPC
 func (s *ChatService) SaveIncomingMessage(msg *pb.Message) error {
 	profile, err := s.profileSvc.GetCurrentProfile()
@@ -198,6 +176,62 @@ func (s *ChatService) SaveIncomingMessage(msg *pb.Message) error {
 	})
 
 	return nil
+}
+
+// Video call signaling — these are pure passthrough, no persistence needed.
+
+func (s *ChatService) SendVideoCallOffer(toPeerID, sdp string) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallOffer(toPeerID, &pb.VideoCallOffer{
+		FromPeerId: profile.PeerId,
+		ToPeerId:   toPeerID,
+		Sdp:        sdp,
+	})
+}
+
+func (s *ChatService) SendVideoCallAnswer(toPeerID, sdp string) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallAnswer(toPeerID, &pb.VideoCallAnswer{
+		FromPeerId: profile.PeerId,
+		ToPeerId:   toPeerID,
+		Sdp:        sdp,
+	})
+}
+
+func (s *ChatService) SendVideoCallICECandidate(toPeerID, candidate, sdpMid string, sdpMLineIndex uint32) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallICECandidate(toPeerID, &pb.VideoCallICECandidate{
+		FromPeerId:    profile.PeerId,
+		ToPeerId:      toPeerID,
+		Candidate:     candidate,
+		SdpMid:        sdpMid,
+		SdpMlineIndex: sdpMLineIndex,
+	})
+}
+
+func (s *ChatService) SendVideoCallHangup(toPeerID, reason string) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallHangup(toPeerID, &pb.VideoCallHangup{
+		FromPeerId: profile.PeerId,
+		ToPeerId:   toPeerID,
+		Reason:     reason,
+	})
 }
 
 // GetMessages - retrieves messages for a chat

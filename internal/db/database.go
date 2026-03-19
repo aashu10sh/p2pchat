@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/glebarez/sqlite"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -33,7 +32,6 @@ func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(&Peer{})
 	db.AutoMigrate(&Chat{})
 	db.AutoMigrate(&Message{})
-	db.AutoMigrate(&Signals{})
 }
 
 type Database struct {
@@ -166,17 +164,4 @@ func (d *Database) GetAllPeers() ([]*Peer, error) {
 	}
 
 	return peers, nil
-}
-
-func (d *Database) SaveSignalingData(toPeerId, fromPeerId, sdp string, accepted bool) (*Signals, error) {
-	s := Signals{
-		UUID:       uuid.NewString(),
-		ToPeerId:   toPeerId,
-		Sdp:        sdp,
-		Accepted:   accepted,
-		FromPeerId: fromPeerId,
-	}
-	d.Db.Create(s)
-
-	return &s, nil
 }

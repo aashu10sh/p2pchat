@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import ChatService, { messages } from '$lib/services/chatService';
 	import { peers } from '$lib/services/peerService';
+	import { startCall } from '$lib/services/callService';
 	import type { Message } from '$lib/entites/message';
 	import type { Peer } from '$lib/entites/peer';
 
@@ -92,8 +93,9 @@
 		);
 	}
 
-	async function handleICEExchange(e: Event) {
-		e.preventDefault();
+	function handleCallPeer() {
+		if (!currentPeer) return;
+		startCall(currentPeer.peer_id, currentPeer.username);
 	}
 
 	function scrollToBottom() {
@@ -182,7 +184,9 @@
 			<div class="header-meta">
 				<span class="label">ID:</span>
 				{currentPeer?.peer_id.substring(0, 8)}...
-				<a href="/call?peer_id={currentPeer?.peer_id}" target="_blank">call</a>
+				{#if currentPeer && isRecentlyOnline(currentPeer)}
+					<button class="call-btn" onclick={handleCallPeer}>[CALL]</button>
+				{/if}
 			</div>
 		</div>
 
@@ -340,6 +344,26 @@
 	.header-meta {
 		font-size: 10px;
 		color: var(--text-secondary);
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.call-btn {
+		font-family: var(--font-mono);
+		font-size: 10px;
+		letter-spacing: 0.1em;
+		padding: 4px 12px;
+		border: 1px solid var(--text-accent);
+		color: var(--text-accent);
+		background: transparent;
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.call-btn:hover {
+		background: var(--text-accent);
+		color: var(--bg-primary);
 	}
 
 	.messages-container {

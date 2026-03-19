@@ -65,16 +65,6 @@ func (h *APIHandler) GetPeerById(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, 200, peer)
 }
 
-func (h *APIHandler) HandleSignaling(w http.ResponseWriter, r *http.Request) {
-	var req SignalingMessageRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-
-}
-
 func (h *APIHandler) CheckProfile(w http.ResponseWriter, r *http.Request) {
 
 	profile, err := h.profileSvc.GetCurrentProfile()
@@ -213,6 +203,10 @@ func (h *APIHandler) StreamEvents(w http.ResponseWriter, r *http.Request) {
 				if err := respondEvent(w, flusher, "peers_update", peers); err != nil {
 					return
 				}
+			case "video_call_offer", "video_call_answer", "video_call_ice_candidate", "video_call_hangup":
+				if err := respondEvent(w, flusher, event.Type, event.Data); err != nil {
+					return
+				}
 			}
 		case <-keepAlive.C:
 			// Send keep-alive comment to prevent connection timeout
@@ -286,27 +280,86 @@ func (h *APIHandler) SendMessage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (h *APIHandler) HandleIncomingSDPExchange(w http.ResponseWriter, r *http.Request) {
-	var req SignalingMessageRequest
+// Video call signaling handlers
 
+func (h *APIHandler) HandleVideoCallOffer(w http.ResponseWriter, r *http.Request) {
+	var req VideoCallOfferRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, "invalid signaling message")
-	}
-
-	if req.Sdp == "" || req.To == "" || req.Type == "" {
-		respondError(w, http.StatusBadRequest, "bad request, need all fields")
-	}
-
-	confirmation, err := h.chatSvc.SendSignalingDataToClient(req.To, req.Sdp, req.Type)
-
-	if err != nil && confirmation != "success" {
-		respondError(w, http.StatusInternalServerError, "failed sending sdp data to the client")
+		respondError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]string{
-		"sdp_sent_to_client": "ok",
-		"uuid":               confirmation,
-	})
+
+	if req.ToPeerID == "" || req.SDP == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id and sdp are required")
+		return
+	}
+
+	if err := h.chatSvc.SendVideoCallOffer(req.ToPeerID, req.SDP); err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to send offer: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "offer_sent"})
+}
+
+func (h *APIHandler) HandleVideoCallAnswer(w http.ResponseWriter, r *http.Request) {
+	var req VideoCallAnswerRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.ToPeerID == "" || req.SDP == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id and sdp are required")
+		return
+	}
+
+	if err := h.chatSvc.SendVideoCallAnswer(req.ToPeerID, req.SDP); err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to send answer: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "answer_sent"})
+}
+
+func (h *APIHandler) HandleVideoCallICECandidate(w http.ResponseWriter, r *http.Request) {
+	var req VideoCallICECandidateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.ToPeerID == "" || req.Candidate == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id and candidate are required")
+		return
+	}
+
+	if err := h.chatSvc.SendVideoCallICECandidate(req.ToPeerID, req.Candidate, req.SDPMid, req.SDPMLineIndex); err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to send ICE candidate: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "ice_candidate_sent"})
+}
+
+func (h *APIHandler) HandleVideoCallHangup(w http.ResponseWriter, r *http.Request) {
+	var req VideoCallHangupRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.ToPeerID == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id is required")
+		return
+	}
+
+	if err := h.chatSvc.SendVideoCallHangup(req.ToPeerID, req.Reason); err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to send hangup: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "hangup_sent"})
 }
 
 func respondEvent(w http.ResponseWriter, flusher http.Flusher, eventType string, data interface{}) error {

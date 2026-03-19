@@ -152,9 +152,11 @@ func SetupHttpServer(
 		}
 	})
 
-	mux.HandleFunc("/api/call/offer", func(w http.ResponseWriter, r *http.Request) {
-		handler.HandleIncomingSDPExchange(w, r)
-	})
+	// Video call signaling routes
+	mux.HandleFunc("/api/call/offer", handler.HandleVideoCallOffer)
+	mux.HandleFunc("/api/call/answer", handler.HandleVideoCallAnswer)
+	mux.HandleFunc("/api/call/ice-candidate", handler.HandleVideoCallICECandidate)
+	mux.HandleFunc("/api/call/hangup", handler.HandleVideoCallHangup)
 
 	frontendFS, _ := fs.Sub(frontendFiles, "frontend/build")
 	mux.Handle("/", http.FileServer(http.FS(frontendFS)))

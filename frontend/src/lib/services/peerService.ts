@@ -4,6 +4,12 @@ import type { Message } from '$lib/entites/message';
 import { err, ok, Result } from 'neverthrow';
 import { writable } from 'svelte/store';
 import { messages } from './chatService';
+import {
+	handleRemoteOffer,
+	handleRemoteAnswer,
+	handleRemoteICECandidate,
+	handleRemoteHangup
+} from './callService';
 
 export const peers = writable<Peer[]>([]);
 
@@ -104,6 +110,50 @@ export default class PeerService {
 				messages.update((msgs) => [...msgs, message]);
 			} catch (e) {
 				console.error('Failed to parse sent message:', e);
+			}
+		});
+
+		// Video call signaling events
+		this.eventSource.addEventListener('video_call_offer', (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				// Resolve username from peers store for the incoming call modal
+				let fromUsername = data.from_peer_id.substring(0, 8) + '...';
+				const unsub = peers.subscribe((peerList) => {
+					const found = peerList.find((p) => p.peer_id === data.from_peer_id);
+					if (found) fromUsername = found.username;
+				});
+				unsub();
+				handleRemoteOffer(data.from_peer_id, data.sdp, fromUsername);
+			} catch (e) {
+				console.error('Failed to parse video call offer:', e);
+			}
+		});
+
+		this.eventSource.addEventListener('video_call_answer', (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				handleRemoteAnswer(data.sdp);
+			} catch (e) {
+				console.error('Failed to parse video call answer:', e);
+			}
+		});
+
+		this.eventSource.addEventListener('video_call_ice_candidate', (event) => {
+			try {
+				const data = JSON.parse(event.data);
+				handleRemoteICECandidate(data.candidate, data.sdp_mid, data.sdp_mline_index);
+			} catch (e) {
+				console.error('Failed to parse video call ICE candidate:', e);
+			}
+		});
+
+		this.eventSource.addEventListener('video_call_hangup', (event) => {
+			try {
+				JSON.parse(event.data); // validate
+				handleRemoteHangup();
+			} catch (e) {
+				console.error('Failed to parse video call hangup:', e);
 			}
 		});
 

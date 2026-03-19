@@ -66,8 +66,26 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-type SignalingMessageRequest struct {
-	Sdp  string `json:"sdp"`
-	Type string `json:"type"`
-	To   string `json:"to"`
+// Video call signaling request types
+
+type VideoCallOfferRequest struct {
+	ToPeerID string `json:"to_peer_id"`
+	SDP      string `json:"sdp"`
+}
+
+type VideoCallAnswerRequest struct {
+	ToPeerID string `json:"to_peer_id"`
+	SDP      string `json:"sdp"`
+}
+
+type VideoCallICECandidateRequest struct {
+	ToPeerID      string `json:"to_peer_id"`
+	Candidate     string `json:"candidate"`
+	SDPMid        string `json:"sdp_mid"`
+	SDPMLineIndex uint32 `json:"sdp_mline_index"`
+}
+
+type VideoCallHangupRequest struct {
+	ToPeerID string `json:"to_peer_id"`
+	Reason   string `json:"reason"`
 }
