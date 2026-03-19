@@ -5,6 +5,13 @@
 	import { startCall } from '$lib/services/callService';
 	import type { Message } from '$lib/entites/message';
 	import type { Peer } from '$lib/entites/peer';
+	import {
+		isRecentlyOnline,
+		formatTime,
+		formatDate,
+		sortMessagesByTimestamp,
+		getInitials
+	} from '$lib/utils';
 
 	interface Props {
 		activePeer: Peer | null;
@@ -30,7 +37,7 @@
 			return;
 		}
 
-		currentPeer = activePeer; // Set initially
+		currentPeer = activePeer;
 
 		const unsubscribe = peers.subscribe((peerList) => {
 			const updated = peerList.find((p) => p.peer_id === activePeer.peer_id);
@@ -57,8 +64,7 @@
 		const result = await chatService.fetchMessages(activePeer.peer_id);
 		result.match(
 			(msgs) => {
-				// Don't reverse - keep chronological order (oldest first, newest last)
-				messageList = msgs;
+				messageList = sortMessagesByTimestamp(msgs);
 				setTimeout(scrollToBottom, 100);
 			},
 			(error) => {
@@ -79,7 +85,6 @@
 		const result = await chatService.sendMessage(activePeer.peer_id, content);
 		result.match(
 			() => {
-				// Message sent successfully
 				isSending = false;
 				setTimeout(() => {
 					if (inputRef) inputRef.focus();
@@ -87,7 +92,7 @@
 			},
 			(error) => {
 				console.error('Failed to send message:', error);
-				messageInput = content; // Restore message on error
+				messageInput = content;
 				isSending = false;
 			}
 		);
@@ -104,51 +109,10 @@
 		}
 	}
 
-	function isRecentlyOnline(peer: Peer): boolean {
-		if (!peer.last_seen) return false;
-		const lastSeen = new Date(peer.last_seen);
-		const now = new Date();
-		const diffMinutes = (now.getTime() - lastSeen.getTime()) / 1000 / 60;
-		return diffMinutes < 1; // Online if seen in last minute
-	}
-
-	function formatTime(timestamp: string): string {
-		if (!timestamp) return '';
-		try {
-			const date = new Date(timestamp);
-			if (isNaN(date.getTime())) {
-				return '';
-			}
-			return date.toLocaleTimeString('en-US', {
-				hour12: false,
-				hour: '2-digit',
-				minute: '2-digit',
-				second: '2-digit'
-			});
-		} catch {
-			return '';
-		}
-	}
-
-	function formatDate(timestamp: string): string {
-		if (!timestamp) return '';
-		try {
-			const date = new Date(timestamp);
-			if (isNaN(date.getTime())) {
-				return '';
-			}
-			return date.toISOString().split('T')[0];
-		} catch {
-			return '';
-		}
-	}
-
 	onMount(() => {
-		// Subscribe to messages store for real-time updates
 		const unsubscribe = messages.subscribe((value) => {
 			if (activePeer && value.length > 0) {
-				// Don't reverse - keep chronological order
-				messageList = value;
+				messageList = sortMessagesByTimestamp(value);
 				setTimeout(scrollToBottom, 50);
 			}
 		});
@@ -157,403 +121,555 @@
 			unsubscribe();
 		};
 	});
-
-	function handleContainerClick() {
-		if (inputRef) inputRef.focus();
-	}
 </script>
 
 {#if !activePeer}
-	<div class="no-chat-selected">
-		<div class="placeholder">
-			<div class="cursor pulse">_</div>
-			<h3>AWAITING_CONNECTION</h3>
-			<p>Select a node from the registry to initiate transmission sequence.</p>
+	<div class="empty-chat">
+		<div class="empty-content">
+			<div class="empty-icon">
+				<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+				</svg>
+			</div>
+			<h3>Select a conversation</h3>
+			<p>Choose a contact from the sidebar to begin chatting.</p>
 		</div>
 	</div>
 {:else}
 	<div class="chat-view">
+		<!-- Header -->
 		<div class="chat-header">
-			<div class="peer-details">
-				<span class="label">TARGET:</span>
-				<h2>@{currentPeer?.username}</h2>
-				<span class="peer-status" class:online={currentPeer && isRecentlyOnline(currentPeer)}>
-					[{currentPeer && isRecentlyOnline(currentPeer) ? 'LINK_ACTIVE' : 'OFFLINE'}]
-				</span>
+			<div class="header-left">
+				<div class="header-avatar" class:online={currentPeer && isRecentlyOnline(currentPeer)}>
+					{getInitials(currentPeer?.username || '')}
+				</div>
+				<div class="header-info">
+					<h2>{currentPeer?.username}</h2>
+					<span class="header-status" class:online={currentPeer && isRecentlyOnline(currentPeer)}>
+						{currentPeer && isRecentlyOnline(currentPeer) ? 'Active now' : 'Offline'}
+					</span>
+				</div>
 			</div>
-			<div class="header-meta">
-				<span class="label">ID:</span>
-				{currentPeer?.peer_id.substring(0, 8)}...
+			<div class="header-actions">
 				{#if currentPeer && isRecentlyOnline(currentPeer)}
-					<button class="call-btn" onclick={handleCallPeer}>[CALL]</button>
+					<button class="action-btn call-btn" onclick={handleCallPeer} title="Start video call">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<polygon points="23 7 16 12 23 17 23 7"></polygon>
+							<rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+						</svg>
+					</button>
 				{/if}
 			</div>
 		</div>
 
-		<div class="messages-container" bind:this={chatContainer}>
+		<!-- Messages -->
+		<div class="messages-area" bind:this={chatContainer}>
 			{#if isLoading}
-				<div class="loading">
-					<span class="pulse">Decrypting transmission logs...</span>
+				<div class="loading-state">
+					<div class="skeleton-group">
+						{#each [1, 2, 3] as _}
+							<div class="skeleton-row left">
+								<div class="skeleton-bubble" style="width: {140 + Math.random() * 80}px"></div>
+							</div>
+						{/each}
+						<div class="skeleton-row right">
+							<div class="skeleton-bubble" style="width: {100 + Math.random() * 60}px"></div>
+						</div>
+						<div class="skeleton-row left">
+							<div class="skeleton-bubble" style="width: {160 + Math.random() * 60}px"></div>
+						</div>
+					</div>
 				</div>
 			{:else if messageList.length === 0}
 				<div class="no-messages">
-					<p>>> CONNECTION ESTABLISHED. LOG IS EMPTY.</p>
+					<div class="no-msg-icon">👋</div>
+					<p class="no-msg-title">No messages yet</p>
+					<p class="no-msg-sub">Send a message to start the conversation.</p>
 				</div>
 			{:else}
-				<div class="log-start">--- BEGIN_LOG ---</div>
 				{#each messageList as message, index (message.ID)}
+					<!-- Date separator -->
 					{#if index === 0 || formatDate(messageList[index - 1].sent_at) !== formatDate(message.sent_at)}
-						<div class="date-separator">
+						<div class="date-divider">
 							<span>{formatDate(message.sent_at)}</span>
 						</div>
 					{/if}
+
+					<!-- Message bubble -->
 					<div
-						class="message"
+						class="message-row"
 						class:sent={message.is_sent_by_me}
 						class:received={!message.is_sent_by_me}
 					>
-						<div class="message-meta">
-							<span class="message-time">[{formatTime(message.sent_at)}]</span>
-							<span class="message-author">{message.is_sent_by_me ? 'SYS' : 'RCV'}</span>
-							{#if message.is_sent_by_me}
-								<span class="message-status">
+						<div class="bubble">
+							<p class="bubble-text">{message.content}</p>
+							<div class="bubble-meta">
+								<span class="bubble-time">{formatTime(message.sent_at)}</span>
+								{#if message.is_sent_by_me}
 									{#if message.delivered_at}
-										<span class="ack">[ACK]</span>
+										<svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+											<polyline points="20 6 9 17 4 12"></polyline>
+										</svg>
 									{:else}
-										<span class="pend">[...]</span>
+										<svg class="check-icon pending" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+											<circle cx="12" cy="12" r="10"></circle>
+										</svg>
 									{/if}
-								</span>
-							{/if}
-						</div>
-						<div class="message-content">
-							<span class="prompt-arrow">{message.is_sent_by_me ? '>' : '<'}</span>
-							<p class="message-text">{message.content}</p>
+								{/if}
+							</div>
 						</div>
 					</div>
 				{/each}
-				<div class="log-end">--- END_LOG ---</div>
 			{/if}
 		</div>
 
-		<form class="message-input-container" onsubmit={handleSendMessage}>
-			<button type="button" class="input-wrapper-btn" onclick={handleContainerClick} tabindex="-1">
-				<div class="input-wrapper">
-					<span class="prompt-symbol {isFocused ? 'active' : ''}">>_</span>
-					<input
-						bind:this={inputRef}
-						bind:value={messageInput}
-						type="text"
-						placeholder="Transmit packet..."
-						class="message-input"
-						autocomplete="off"
-						spellcheck="false"
-						disabled={isSending}
-						onfocus={() => (isFocused = true)}
-						onblur={() => (isFocused = false)}
-					/>
-				</div>
-			</button>
-			{#if isSending}
-				<div class="sending-indicator pulse">[TX...]</div>
-			{/if}
+		<!-- Input -->
+		<form class="input-bar" onsubmit={handleSendMessage}>
+			<div class="input-container" class:focused={isFocused}>
+				<input
+					bind:this={inputRef}
+					bind:value={messageInput}
+					type="text"
+					placeholder="Type a message..."
+					autocomplete="off"
+					spellcheck="false"
+					disabled={isSending}
+					onfocus={() => (isFocused = true)}
+					onblur={() => (isFocused = false)}
+				/>
+				<button
+					type="submit"
+					class="send-btn"
+					disabled={!messageInput.trim() || isSending}
+					title="Send message"
+				>
+					{#if isSending}
+						<div class="send-spinner"></div>
+					{:else}
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+							<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+						</svg>
+					{/if}
+				</button>
+			</div>
 		</form>
 	</div>
 {/if}
 
 <style>
-	.no-chat-selected {
+	/* ── Empty State ── */
+	.empty-chat {
 		flex: 1;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background-color: var(--bg-primary);
-		font-family: var(--font-mono);
+		background: var(--bg-primary);
 	}
 
-	.placeholder {
+	.empty-content {
 		text-align: center;
-		color: var(--text-secondary);
 	}
 
-	.placeholder .cursor {
-		font-size: 3rem;
-		color: var(--text-accent);
-		margin-bottom: 20px;
+	.empty-icon {
+		color: var(--text-tertiary);
+		margin-bottom: 16px;
+		opacity: 0.6;
 	}
 
-	.placeholder h3 {
+	.empty-content h3 {
+		font-size: 17px;
+		font-weight: 600;
 		color: var(--text-primary);
-		font-size: 16px;
-		letter-spacing: 0.1em;
-		margin-bottom: 12px;
+		margin: 0 0 6px;
 	}
 
-	.placeholder p {
-		font-size: 12px;
-		opacity: 0.7;
-		letter-spacing: 0.05em;
+	.empty-content p {
+		font-size: 14px;
+		color: var(--text-secondary);
+		margin: 0;
 	}
 
+	/* ── Chat View ── */
 	.chat-view {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
-		background-color: var(--bg-primary);
-		font-family: var(--font-mono);
+		background: var(--bg-primary);
 	}
 
+	/* ── Header ── */
 	.chat-header {
-		padding: 16px 24px;
+		padding: 14px 20px;
 		border-bottom: 1px solid var(--border-color);
-		background-color: var(--bg-secondary);
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+		background: var(--glass-bg-heavy);
+		backdrop-filter: blur(var(--glass-blur));
 	}
 
-	.peer-details {
+	.header-left {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 	}
 
-	.label {
+	.header-avatar {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		background: var(--bg-tertiary);
 		color: var(--text-secondary);
-		font-size: 10px;
-		letter-spacing: 0.1em;
-	}
-
-	.peer-details h2 {
-		color: var(--text-primary);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.header-avatar.online {
+		background: linear-gradient(135deg, var(--accent), #5856d6);
+		color: white;
+	}
+
+	.header-info h2 {
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--text-primary);
 		margin: 0;
-		font-weight: 500;
-		letter-spacing: 0.05em;
+		letter-spacing: -0.01em;
 	}
 
-	.peer-status {
-		font-size: 10px;
+	.header-status {
+		font-size: 12px;
 		color: var(--text-secondary);
-		letter-spacing: 0.05em;
 	}
 
-	.peer-status.online {
-		color: var(--text-accent);
+	.header-status.online {
+		color: var(--success);
 	}
 
-	.header-meta {
-		font-size: 10px;
-		color: var(--text-secondary);
+	.header-actions {
 		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.call-btn {
-		font-family: var(--font-mono);
-		font-size: 10px;
-		letter-spacing: 0.1em;
-		padding: 4px 12px;
-		border: 1px solid var(--text-accent);
-		color: var(--text-accent);
-		background: transparent;
-		cursor: pointer;
-		transition: all 0.15s ease;
-	}
-
-	.call-btn:hover {
-		background: var(--text-accent);
-		color: var(--bg-primary);
-	}
-
-	.messages-container {
-		flex: 1;
-		overflow-y: auto;
-		padding: 24px;
-		display: flex;
-		flex-direction: column;
 		gap: 8px;
 	}
 
-	.loading,
-	.no-messages {
-		padding: 32px;
+	.action-btn {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		border: none;
+		background: var(--bg-secondary);
 		color: var(--text-secondary);
-		font-size: 12px;
-		letter-spacing: 0.05em;
-	}
-
-	.log-start,
-	.log-end {
-		color: var(--border-hover);
-		font-size: 10px;
-		text-align: center;
-		margin: 16px 0;
-		letter-spacing: 0.1em;
-	}
-
-	.date-separator {
 		display: flex;
-		margin: 24px 0 16px 0;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all var(--transition-fast);
 	}
 
-	.date-separator span {
-		color: var(--text-secondary);
-		font-size: 10px;
-		letter-spacing: 0.1em;
-		border-bottom: 1px solid var(--border-hover);
-		padding-bottom: 2px;
+	.action-btn:hover {
+		background: var(--accent-light);
+		color: var(--accent);
 	}
 
-	.message {
+	.action-btn.call-btn:hover {
+		background: var(--accent);
+		color: white;
+	}
+
+	/* ── Messages Area ── */
+	.messages-area {
+		flex: 1;
+		overflow-y: auto;
+		padding: 16px 20px;
 		display: flex;
 		flex-direction: column;
-		margin-bottom: 12px;
-		animation: slideIn 0.15s ease-out;
+		gap: 4px;
+		background: var(--bg-secondary);
 	}
 
-	@keyframes slideIn {
+	/* ── Loading Skeleton ── */
+	.loading-state {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 32px;
+	}
+
+	.skeleton-group {
+		width: 100%;
+		max-width: 500px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.skeleton-row {
+		display: flex;
+	}
+
+	.skeleton-row.left {
+		justify-content: flex-start;
+	}
+
+	.skeleton-row.right {
+		justify-content: flex-end;
+	}
+
+	.skeleton-bubble {
+		height: 36px;
+		border-radius: 18px;
+		background: linear-gradient(90deg, var(--bg-tertiary) 25%, #e0e0e5 50%, var(--bg-tertiary) 75%);
+		background-size: 200% 100%;
+		animation: shimmer 1.5s ease-in-out infinite;
+	}
+
+	@keyframes shimmer {
+		0% {
+			background-position: 200% 0;
+		}
+		100% {
+			background-position: -200% 0;
+		}
+	}
+
+	/* ── No Messages ── */
+	.no-messages {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 40px;
+	}
+
+	.no-msg-icon {
+		font-size: 40px;
+		margin-bottom: 12px;
+	}
+
+	.no-msg-title {
+		font-size: 16px;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0 0 4px;
+	}
+
+	.no-msg-sub {
+		font-size: 13px;
+		color: var(--text-secondary);
+		margin: 0;
+	}
+
+	/* ── Date Divider ── */
+	.date-divider {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 12px 0;
+	}
+
+	.date-divider span {
+		font-size: 12px;
+		font-weight: 500;
+		color: var(--text-secondary);
+		background: var(--bg-primary);
+		padding: 4px 14px;
+		border-radius: var(--radius-full);
+		box-shadow: var(--shadow-sm);
+	}
+
+	/* ── Message Rows ── */
+	.message-row {
+		display: flex;
+		animation: messageSlideIn var(--transition-spring) both;
+	}
+
+	.message-row.sent {
+		justify-content: flex-end;
+	}
+
+	.message-row.received {
+		justify-content: flex-start;
+	}
+
+	@keyframes messageSlideIn {
 		from {
 			opacity: 0;
-			transform: translateY(4px);
+			transform: translateY(12px) scale(0.97);
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0);
+			transform: translateY(0) scale(1);
 		}
 	}
 
-	.message-meta {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-size: 10px;
-		color: var(--text-secondary);
-		margin-bottom: 4px;
+	/* ── Bubble ── */
+	.bubble {
+		max-width: 75%;
+		padding: 10px 14px;
+		border-radius: 18px;
+		position: relative;
+		word-wrap: break-word;
 	}
 
-	.message.sent .message-meta {
-		color: var(--text-accent);
+	.message-row.sent .bubble {
+		background: var(--accent);
+		color: white;
+		border-bottom-right-radius: 6px;
+	}
+
+	.message-row.received .bubble {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		border-bottom-left-radius: 6px;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.bubble-text {
+		margin: 0;
+		font-size: 14px;
+		line-height: 1.45;
+	}
+
+	.bubble-meta {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		justify-content: flex-end;
+		margin-top: 4px;
+	}
+
+	.bubble-time {
+		font-size: 11px;
+		opacity: 0.6;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.message-row.sent .bubble-time {
+		color: rgba(255, 255, 255, 0.7);
+	}
+
+	.message-row.received .bubble-time {
+		color: var(--text-secondary);
+	}
+
+	.check-icon {
 		opacity: 0.7;
 	}
 
-	.message-author {
-		font-weight: bold;
+	.message-row.sent .check-icon {
+		color: rgba(255, 255, 255, 0.8);
 	}
 
-	.message-status {
-		margin-left: 4px;
+	.check-icon.pending {
+		opacity: 0.4;
 	}
 
-	.message-status .ack {
-		color: var(--text-accent);
-	}
-
-	.message-content {
-		display: flex;
-		align-items: flex-start;
-		gap: 8px;
-	}
-
-	.prompt-arrow {
-		color: var(--text-secondary);
-		margin-top: 1px;
-	}
-
-	.message.sent .prompt-arrow {
-		color: var(--text-accent);
-	}
-
-	.message-text {
-		margin: 0;
-		word-wrap: break-word;
-		font-size: 13px;
-		line-height: 1.5;
-		color: var(--text-primary);
-		font-family: var(--font-sans);
-	}
-
-	.message.received .message-text {
-		color: #e0e0e0;
-	}
-
-	.message-input-container {
-		padding: 20px 24px;
-		background-color: var(--bg-primary);
+	/* ── Input Bar ── */
+	.input-bar {
+		padding: 12px 16px;
+		background: var(--bg-primary);
 		border-top: 1px solid var(--border-color);
+	}
+
+	.input-container {
 		display: flex;
 		align-items: center;
-		gap: 16px;
-		cursor: text;
+		background: var(--bg-secondary);
+		border-radius: var(--radius-full);
+		border: 1.5px solid transparent;
+		padding: 4px 4px 4px 18px;
+		transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 	}
 
-	.input-wrapper {
-		flex: 1;
-		display: flex;
-		align-items: center;
+	.input-container.focused {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-light);
+		background: var(--bg-primary);
 	}
 
-	.prompt-symbol {
-		color: var(--text-secondary);
-		margin-right: 12px;
-		font-weight: bold;
-		font-size: 14px;
-		transition: color 0.15s ease;
-	}
-
-	.prompt-symbol.active {
-		color: var(--text-accent);
-	}
-
-	.message-input {
+	.input-container input {
 		flex: 1;
 		background: transparent;
 		border: none;
 		color: var(--text-primary);
-		font-family: var(--font-mono);
-		font-size: 13px;
+		font-family: var(--font-sans);
+		font-size: 14px;
 		outline: none;
-		letter-spacing: 0.05em;
+		padding: 8px 0;
 	}
 
-	.message-input:disabled {
+	.input-container input::placeholder {
+		color: var(--text-tertiary);
+	}
+
+	.input-container input:disabled {
 		opacity: 0.5;
 	}
 
-	.sending-indicator {
-		color: var(--text-accent);
-		font-size: 11px;
-		letter-spacing: 0.1em;
+	.send-btn {
+		width: 36px;
+		height: 36px;
+		border-radius: 50%;
+		border: none;
+		background: var(--accent);
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		transition: all var(--transition-fast);
+		flex-shrink: 0;
 	}
 
-	.pulse {
-		animation: pulse 1.5s infinite ease-in-out;
+	.send-btn:hover:not(:disabled) {
+		background: var(--accent-hover);
+		transform: scale(1.05);
 	}
 
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 0.4;
+	.send-btn:active:not(:disabled) {
+		transform: scale(0.95);
+	}
+
+	.send-btn:disabled {
+		opacity: 0.3;
+		cursor: not-allowed;
+	}
+
+	.send-spinner {
+		width: 16px;
+		height: 16px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-top-color: white;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
 		}
-		50% {
-			opacity: 1;
-		}
 	}
 
-	/* Scrollbar styling for chat container */
-	.messages-container::-webkit-scrollbar {
+	/* ── Scrollbar ── */
+	.messages-area::-webkit-scrollbar {
 		width: 6px;
 	}
 
-	.messages-container::-webkit-scrollbar-track {
+	.messages-area::-webkit-scrollbar-track {
 		background: transparent;
 	}
 
-	.messages-container::-webkit-scrollbar-thumb {
-		background: var(--border-color);
+	.messages-area::-webkit-scrollbar-thumb {
+		background: rgba(0, 0, 0, 0.12);
+		border-radius: var(--radius-full);
 	}
 
-	.messages-container::-webkit-scrollbar-thumb:hover {
-		background: var(--border-hover);
+	.messages-area::-webkit-scrollbar-thumb:hover {
+		background: rgba(0, 0, 0, 0.2);
 	}
 </style>

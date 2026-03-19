@@ -4,6 +4,7 @@ import type { Message } from '$lib/entites/message';
 import { err, ok, Result } from 'neverthrow';
 import { writable } from 'svelte/store';
 import { messages } from './chatService';
+import { sortMessagesByTimestamp } from '$lib/utils';
 import {
 	handleRemoteOffer,
 	handleRemoteAnswer,
@@ -13,9 +14,15 @@ import {
 
 export const peers = writable<Peer[]>([]);
 
+/** Maximum number of SSE reconnect attempts before giving up */
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY_MS = 1000;
+
 export default class PeerService {
 	private eventSource: EventSource | null = null;
 	private messageCallback: ((message: Message) => void) | null = null;
+	private reconnectAttempts = 0;
+	private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
 	async fetchPeer(peerId: string): Promise<Result<Peer, Error>> {
 		try {
@@ -66,11 +73,15 @@ export default class PeerService {
 		}
 
 		this.messageCallback = onMessageReceived || null;
+		this.connectSSE(onPeersUpdate);
+	}
 
+	private connectSSE(onPeersUpdate?: (peers: Peer[]) => void) {
 		this.eventSource = new EventSource('http://localhost:8000/api/events');
 
 		this.eventSource.addEventListener('connected', (event) => {
 			console.log('SSE Connected:', event.data);
+			this.reconnectAttempts = 0; // Reset on successful connection
 		});
 
 		this.eventSource.addEventListener('peers_update', (event) => {
@@ -88,10 +99,9 @@ export default class PeerService {
 		this.eventSource.addEventListener('message_received', (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
-				console.log('New message received:', message);
 
-				// Update messages store
-				messages.update((msgs) => [...msgs, message]);
+				// Update messages store with sorting to maintain order
+				messages.update((msgs) => sortMessagesByTimestamp([...msgs, message]));
 
 				if (this.messageCallback) {
 					this.messageCallback(message);
@@ -104,10 +114,9 @@ export default class PeerService {
 		this.eventSource.addEventListener('message_sent', (event) => {
 			try {
 				const message = JSON.parse(event.data) as Message;
-				console.log('Message sent confirmed:', message);
 
-				// Update messages store
-				messages.update((msgs) => [...msgs, message]);
+				// Update messages store with sorting to maintain order
+				messages.update((msgs) => sortMessagesByTimestamp([...msgs, message]));
 			} catch (e) {
 				console.error('Failed to parse sent message:', e);
 			}
@@ -117,7 +126,6 @@ export default class PeerService {
 		this.eventSource.addEventListener('video_call_offer', (event) => {
 			try {
 				const data = JSON.parse(event.data);
-				// Resolve username from peers store for the incoming call modal
 				let fromUsername = data.from_peer_id.substring(0, 8) + '...';
 				const unsub = peers.subscribe((peerList) => {
 					const found = peerList.find((p) => p.peer_id === data.from_peer_id);
@@ -157,16 +165,47 @@ export default class PeerService {
 			}
 		});
 
-		this.eventSource.onerror = (error) => {
-			console.error('SSE Error:', error);
-			// Reconnect logic could be added here
+		this.eventSource.onerror = () => {
+			console.warn('SSE connection error, attempting reconnect...');
+			this.handleReconnect(onPeersUpdate);
 		};
 	}
 
-	stopEventStream() {
+	private handleReconnect(onPeersUpdate?: (peers: Peer[]) => void) {
+		// Close the broken connection
 		if (this.eventSource) {
 			this.eventSource.close();
 			this.eventSource = null;
 		}
+
+		if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+			console.error('SSE: Max reconnect attempts reached. Giving up.');
+			return;
+		}
+
+		// Exponential backoff: 1s, 2s, 4s, 8s... capped at 30s
+		const delay = Math.min(
+			BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
+			30000
+		);
+		this.reconnectAttempts++;
+
+		console.log(`SSE: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
+		this.reconnectTimer = setTimeout(() => {
+			this.connectSSE(onPeersUpdate);
+		}, delay);
+	}
+
+	stopEventStream() {
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer);
+			this.reconnectTimer = null;
+		}
+		if (this.eventSource) {
+			this.eventSource.close();
+			this.eventSource = null;
+		}
+		this.reconnectAttempts = 0;
 	}
 }

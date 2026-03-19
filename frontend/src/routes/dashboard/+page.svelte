@@ -18,17 +18,15 @@
 	}
 
 	onMount(() => {
-		// Start SSE connection once at the dashboard level
 		peerService.startEventStream();
 	});
 
 	onDestroy(() => {
-		// Stop SSE when leaving dashboard
 		peerService.stopEventStream();
 	});
 </script>
 
-<div class="dashboard-container">
+<div class="dashboard">
 	<PeerSidebar onPeerSelect={handlePeerSelect} activePeerId={activePeer?.peer_id} />
 	<ChatView {activePeer} myPeerId={data.user.peer_id} />
 
@@ -38,9 +36,9 @@
 </div>
 
 <style>
-	.dashboard-container {
+	.dashboard {
 		display: flex;
 		height: 100vh;
-		background-color: var(--bg-primary); /* True black background */
+		background-color: var(--bg-secondary);
 	}
 </style>

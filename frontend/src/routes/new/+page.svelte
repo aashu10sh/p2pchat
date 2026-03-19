@@ -19,14 +19,13 @@
 
 		if (already.isOk()) {
 			const err = {
-				error: 'A Profile Already exists! Redirecting!'
+				error: 'A profile already exists. Redirecting...'
 			};
 			error = err;
 			setTimeout(() => goto('/dashboard'), 1500);
 			return;
 		}
 
-		// Auto-focus the input
 		await tick();
 		if (inputRef) inputRef.focus();
 	});
@@ -39,7 +38,7 @@
 
 		result.match(
 			(p) => {
-				message = `[OK] Allocated handle: ${p.user_name} on network ${p.wifi_name}`;
+				message = `Welcome, ${p.user_name}! Setting things up...`;
 				setTimeout(() => goto('/'), 1500);
 			},
 			(err) => {
@@ -48,155 +47,252 @@
 			}
 		);
 	}
-
-	function handleContainerClick() {
-		if (inputRef) inputRef.focus();
-	}
 </script>
 
-<div class="terminal-container" onclick={handleContainerClick}>
-	<div class="terminal-content">
+<div class="screen">
+	<div class="card">
+		<div class="card-header">
+			<div class="logo-mark">
+				<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+				</svg>
+			</div>
+			<h1>Create your profile</h1>
+			<p class="subtitle">Choose a username to get started on the network.</p>
+		</div>
+
 		{#if data.wifiName}
-			<div class="sys-info">
-				<span class="label">SYS:</span> Environment initialized
-				<br />
-				<span class="label">NET:</span>
-				{data.wifiName}
+			<div class="network-badge">
+				<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+					<path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+					<path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+					<circle cx="12" cy="20" r="1"></circle>
+				</svg>
+				<span>{data.wifiName}</span>
 			</div>
 
-			<div class="prompt-text">Enter desired handle to configure node identity:</div>
-
-			<form class="cli-form" onsubmit={handleUserCreation}>
-				<span class="prompt-symbol {isFocused ? 'active' : ''}">>_</span>
-				<input
-					bind:this={inputRef}
-					bind:value={user_name}
-					type="text"
-					spellcheck="false"
-					autocomplete="off"
-					required
-					onfocus={() => (isFocused = true)}
-					onblur={() => (isFocused = false)}
-				/>
+			<form class="form" onsubmit={handleUserCreation}>
+				<div class="input-group" class:focused={isFocused}>
+					<input
+						bind:this={inputRef}
+						bind:value={user_name}
+						type="text"
+						placeholder="Username"
+						spellcheck="false"
+						autocomplete="off"
+						required
+						onfocus={() => (isFocused = true)}
+						onblur={() => (isFocused = false)}
+					/>
+				</div>
+				<button type="submit" class="submit-btn" disabled={!user_name.trim()}>
+					Continue
+				</button>
 			</form>
 		{:else}
-			<div class="sys-info loading">Scanning network interfaces...</div>
+			<div class="loading-state">
+				<div class="spinner"></div>
+				<span>Detecting network...</span>
+			</div>
 		{/if}
 
 		{#if message}
-			<div class="sys-msg success">{message}</div>
+			<div class="feedback success">{message}</div>
 		{/if}
 
 		{#if error}
-			<div class="sys-msg error">ERR: {error.error}</div>
+			<div class="feedback error">{error.error}</div>
 		{/if}
 	</div>
 </div>
 
 <style>
-	.terminal-container {
+	.screen {
 		height: 100vh;
 		width: 100vw;
-		background-color: var(--bg-primary);
-		color: var(--text-primary);
+		background-color: var(--bg-secondary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-family: var(--font-mono);
-		padding: 2rem;
-		cursor: text;
+		padding: 24px;
 	}
 
-	.terminal-content {
-		max-width: 600px;
+	.card {
+		background: var(--bg-primary);
+		border-radius: var(--radius-2xl);
+		padding: 48px 40px;
 		width: 100%;
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
+		max-width: 420px;
+		box-shadow: var(--shadow-lg);
+		border: 1px solid var(--border-color);
+		animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
-	.sys-info {
-		color: var(--text-secondary);
-		font-size: 0.85rem;
-		line-height: 1.6;
-		margin-bottom: 1rem;
-		opacity: 0.8;
+	.card-header {
+		text-align: center;
+		margin-bottom: 32px;
 	}
 
-	.label {
-		color: var(--text-accent);
-		opacity: 0.7;
-	}
-
-	.loading {
-		animation: pulse 2s infinite ease-in-out;
-	}
-
-	.prompt-text {
-		font-size: 0.95rem;
-		color: var(--text-primary);
-		letter-spacing: 0.02em;
-	}
-
-	.cli-form {
+	.logo-mark {
+		width: 52px;
+		height: 52px;
+		border-radius: var(--radius-lg);
+		background: var(--accent-light);
+		color: var(--accent);
 		display: flex;
 		align-items: center;
-		margin-top: 0.5rem;
-		border-bottom: 1px solid var(--border-color);
-		padding-bottom: 0.5rem;
-		transition: border-color 0.2s ease;
+		justify-content: center;
+		margin: 0 auto 20px;
 	}
 
-	.cli-form:focus-within {
-		border-bottom-color: var(--text-accent);
+	.card-header h1 {
+		font-size: 22px;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin: 0 0 8px;
+		letter-spacing: -0.02em;
 	}
 
-	.prompt-symbol {
+	.subtitle {
+		font-size: 14px;
 		color: var(--text-secondary);
-		margin-right: 0.75rem;
-		font-weight: bold;
-		transition: color 0.2s ease;
+		margin: 0;
+		line-height: 1.5;
 	}
 
-	.prompt-symbol.active {
-		color: var(--text-accent);
+	.network-badge {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		background: var(--bg-secondary);
+		border-radius: var(--radius-md);
+		font-size: 13px;
+		color: var(--text-secondary);
+		margin-bottom: 24px;
+	}
+
+	.form {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.input-group {
+		border-radius: var(--radius-md);
+		border: 1.5px solid var(--border-hover);
+		transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+		overflow: hidden;
+	}
+
+	.input-group.focused {
+		border-color: var(--accent);
+		box-shadow: 0 0 0 3px var(--accent-light);
 	}
 
 	input {
-		flex: 1;
+		width: 100%;
+		padding: 14px 16px;
 		background: transparent;
 		border: none;
 		color: var(--text-primary);
-		font-family: var(--font-mono);
-		font-size: 1.2rem;
+		font-family: var(--font-sans);
+		font-size: 16px;
 		outline: none;
-		letter-spacing: 0.05em;
 	}
 
-	input::selection {
-		background: var(--text-accent);
-		color: var(--bg-primary);
+	input::placeholder {
+		color: var(--text-tertiary);
 	}
 
-	.sys-msg {
-		margin-top: 1rem;
-		font-size: 0.85rem;
+	.submit-btn {
+		width: 100%;
+		padding: 14px;
+		background: var(--accent);
+		color: white;
+		border: none;
+		border-radius: var(--radius-md);
+		font-family: var(--font-sans);
+		font-size: 15px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background var(--transition-fast), transform var(--transition-fast);
 	}
 
-	.success {
-		color: var(--text-accent);
+	.submit-btn:hover:not(:disabled) {
+		background: var(--accent-hover);
 	}
 
-	.error {
-		color: #ff3333;
+	.submit-btn:active:not(:disabled) {
+		transform: scale(0.98);
 	}
 
-	@keyframes pulse {
-		0%,
-		100% {
-			opacity: 0.5;
+	.submit-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.loading-state {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		padding: 20px;
+		color: var(--text-secondary);
+		font-size: 14px;
+	}
+
+	.spinner {
+		width: 18px;
+		height: 18px;
+		border: 2px solid var(--bg-tertiary);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: spin 0.7s linear infinite;
+	}
+
+	.feedback {
+		margin-top: 16px;
+		padding: 12px 14px;
+		border-radius: var(--radius-sm);
+		font-size: 13px;
+		text-align: center;
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	.feedback.success {
+		background: rgba(52, 199, 89, 0.08);
+		color: var(--success);
+	}
+
+	.feedback.error {
+		background: rgba(255, 59, 48, 0.08);
+		color: var(--danger);
+	}
+
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(16px);
 		}
-		50% {
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
 			opacity: 1;
 		}
 	}

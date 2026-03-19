@@ -2,6 +2,7 @@ import type { Message, Chat } from '$lib/entites/message';
 import type { Error } from '$lib/entites/error';
 import { err, ok, Result } from 'neverthrow';
 import { writable } from 'svelte/store';
+import { sortMessagesByTimestamp } from '$lib/utils';
 
 export const messages = writable<Message[]>([]);
 export const chats = writable<Chat[]>([]);
@@ -39,8 +40,9 @@ export default class ChatService {
 
 			if (response.ok) {
 				const messageList = (await response.json()) as Message[];
-				messages.set(messageList || []);
-				return ok(messageList || []);
+				const sorted = sortMessagesByTimestamp(messageList || []);
+				messages.set(sorted);
+				return ok(sorted);
 			} else {
 				const error = (await response.json()) as Error;
 				return err(error);

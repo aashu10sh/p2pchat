@@ -28,79 +28,114 @@
 	});
 </script>
 
-<div class="screen-wrapper">
-	{#if isFetching}
-		<div class="status connecting">
-			<span class="cursor">_</span> Initialize connection...
-		</div>
-	{:else if error}
-		<div class="status error-state">
-			<div class="err-text">ERR: {error.error}</div>
-			<div class="sub-text">Redirecting to new profile...</div>
-		</div>
-	{:else if profile}
-		<div class="status success">
-			<div class="auth-text">AUTH OK: <span class="accent">{profile.user_name}</span></div>
-			<div class="sub-text">Loading dashboard module...</div>
-		</div>
-	{/if}
+<div class="screen">
+	<div class="content">
+		{#if isFetching}
+			<div class="loader">
+				<div class="spinner"></div>
+				<p class="label">Connecting...</p>
+			</div>
+		{:else if error}
+			<div class="loader">
+				<div class="icon">👋</div>
+				<p class="label">Welcome</p>
+				<p class="sublabel">Setting up your profile...</p>
+			</div>
+		{:else if profile}
+			<div class="loader">
+				<div class="avatar">{profile.user_name.charAt(0).toUpperCase()}</div>
+				<p class="label">{profile.user_name}</p>
+				<p class="sublabel">Loading your conversations...</p>
+			</div>
+		{/if}
+	</div>
 </div>
 
 <style>
-	.screen-wrapper {
+	.screen {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		height: 100vh;
 		width: 100vw;
 		background-color: var(--bg-primary);
+	}
+
+	.content {
+		animation: fadeIn 0.6s ease-out;
+	}
+
+	.loader {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.spinner {
+		width: 32px;
+		height: 32px;
+		border: 2.5px solid var(--bg-tertiary);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+	}
+
+	.icon {
+		font-size: 40px;
+		animation: float 2s ease-in-out infinite;
+	}
+
+	.avatar {
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, var(--accent), #5856d6);
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 22px;
+		font-weight: 600;
+	}
+
+	.label {
+		font-size: 17px;
+		font-weight: 500;
 		color: var(--text-primary);
+		margin: 0;
 	}
 
-	.status {
-		font-family: var(--font-mono);
-		font-size: 14px;
-		letter-spacing: 0.05em;
-	}
-
-	.connecting {
+	.sublabel {
+		font-size: 13px;
 		color: var(--text-secondary);
+		margin: 0;
 	}
 
-	.error-state .err-text {
-		color: #ff3333;
-		margin-bottom: 8px;
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
-	.success .auth-text {
-		color: var(--text-secondary);
-		margin-bottom: 8px;
+	@keyframes fadeIn {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 
-	.accent {
-		color: var(--text-accent);
-	}
-
-	.sub-text {
-		font-size: 12px;
-		color: var(--text-secondary);
-		opacity: 0.5;
-	}
-
-	.cursor {
-		display: inline-block;
-		animation: blink 1s step-end infinite;
-		color: var(--text-accent);
-		margin-right: 4px;
-	}
-
-	@keyframes blink {
+	@keyframes float {
 		0%,
 		100% {
-			opacity: 1;
+			transform: translateY(0);
 		}
 		50% {
-			opacity: 0;
+			transform: translateY(-6px);
 		}
 	}
 </style>

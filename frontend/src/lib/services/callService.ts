@@ -15,6 +15,7 @@ export const remotePeerName = writable<string>('');
 export const localStream = writable<MediaStream | null>(null);
 export const remoteStream = writable<MediaStream | null>(null);
 export const incomingCall = writable<IncomingCallData | null>(null);
+export const mediaError = writable<string | null>(null);
 
 let pc: RTCPeerConnection | null = null;
 
@@ -28,12 +29,28 @@ const rtcConfig: RTCConfiguration = {
 };
 
 async function getLocalMedia(): Promise<MediaStream> {
-	const stream = await navigator.mediaDevices.getUserMedia({
-		video: true,
-		audio: true
-	});
-	localStream.set(stream);
-	return stream;
+	try {
+		mediaError.set(null);
+		const stream = await navigator.mediaDevices.getUserMedia({
+			video: true,
+			audio: true
+		});
+		localStream.set(stream);
+		return stream;
+	} catch (err) {
+		const errorMessage =
+			err instanceof DOMException
+				? err.name === 'NotAllowedError'
+					? 'Camera and microphone access denied. Please allow permissions.'
+					: err.name === 'NotFoundError'
+						? 'No camera or microphone found on this device.'
+						: `Media error: ${err.message}`
+				: 'Unable to access camera and microphone.';
+
+		mediaError.set(errorMessage);
+		console.error('getLocalMedia failed:', err);
+		throw err;
+	}
 }
 
 function createPeerConnection(): RTCPeerConnection {
@@ -309,5 +326,6 @@ function cleanup(): void {
 	}
 
 	remoteStream.set(null);
+	mediaError.set(null);
 	pendingICECandidates = [];
 }
