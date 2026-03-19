@@ -121,6 +121,9 @@ func (s *ChatService) SendMessage(toPeerID, content, msgType string) (string, er
 	dbMsg.DeliveredAt = &now
 	s.db.UpdateMessage(dbMsg)
 
+	// Set computed field before publishing so the UI knows this is our own message
+	dbMsg.IsSentByMe = true
+
 	// Publish event for local UI update
 	s.eventBus.Publish(events.Event{
 		Type: "message_sent",

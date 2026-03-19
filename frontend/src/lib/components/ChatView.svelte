@@ -109,6 +109,18 @@
 		}
 	}
 
+	/**
+	 * Robustly determines if a message was sent by the current user.
+	 * Primary: compare from_peer_id against myPeerId (reliable).
+	 * Fallback: is_sent_by_me flag from server.
+	 */
+	function isMine(message: Message): boolean {
+		if (myPeerId && message.from_peer_id) {
+			return message.from_peer_id === myPeerId;
+		}
+		return message.is_sent_by_me;
+	}
+
 	onMount(() => {
 		const unsubscribe = messages.subscribe((value) => {
 			if (activePeer && value.length > 0) {
@@ -196,16 +208,17 @@
 					{/if}
 
 					<!-- Message bubble -->
+					{@const mine = isMine(message)}
 					<div
 						class="message-row"
-						class:sent={message.is_sent_by_me}
-						class:received={!message.is_sent_by_me}
+						class:sent={mine}
+						class:received={!mine}
 					>
 						<div class="bubble">
 							<p class="bubble-text">{message.content}</p>
 							<div class="bubble-meta">
 								<span class="bubble-time">{formatTime(message.sent_at)}</span>
-								{#if message.is_sent_by_me}
+								{#if mine}
 									{#if message.delivered_at}
 										<svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
 											<polyline points="20 6 9 17 4 12"></polyline>
