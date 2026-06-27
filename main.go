@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"embed"
+	"fmt"
 	"io/fs"
 	"log"
 	"net"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/aashu10sh/p2pchat/internal/api"
 	"github.com/aashu10sh/p2pchat/internal/db"
+	"github.com/aashu10sh/p2pchat/internal/discovery"
 	"github.com/aashu10sh/p2pchat/internal/events"
 	ggrpc "github.com/aashu10sh/p2pchat/internal/grpc"
 	"github.com/aashu10sh/p2pchat/internal/peer"
@@ -25,26 +28,35 @@ import (
 var embeddedFiles embed.FS
 
 func main() {
-
-	db := db.GetDatabase()
+	grpcPort := 5001
+	database := db.GetDatabase()
 	eventBus := events.NewEventBus()
 
 	peerManager := peer.NewManager(eventBus)
-	profileSvc := service.NewProfileService(db)
-	chatSvc := service.NewChatService(db, peerManager, profileSvc, eventBus)
 
-	httpServer := SetupHttpServer(embeddedFiles, profileSvc)
+	profileSvc := service.NewProfileService(database)
+	chatSvc := service.NewChatService(database, peerManager, profileSvc, eventBus)
+	peerSvc := service.NewPeerService(database)
+
+	// Get current profile for mDNS announcement
+	profile, err := profileSvc.GetCurrentProfile()
+
+	if err != nil {
+		log.Printf("Warning: No profile found. mDNS will not start. Create a profile first: %v", err)
+	}
+
+	httpServer := SetupHttpServer(embeddedFiles, profileSvc, peerSvc, database, chatSvc, eventBus)
 
 	go func() {
-		log.Printf("HTTP server listening on http://localhost:8080")
-		log.Printf("Open http://localhost:8080 in your browser")
+		log.Printf("HTTP server listening on http://localhost:8000")
+		log.Printf("Open http://localhost:8000 in your browser")
 		if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("HTTP server error: %v", err)
 		}
 	}()
 
 	go func() {
-		lis, err := net.Listen("tcp", ":5001")
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
 		if err != nil {
 			panic(err)
 		}
@@ -59,28 +71,60 @@ func main() {
 
 	}()
 
+	// Start mDNS service if profile exists
+	var mdnsService *discovery.MDNSService
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if profile != nil {
+		mdnsService = discovery.NewMDNSService(
+			peerManager,
+			database,
+			eventBus,
+			profile.PeerId,
+			profile.UserName,
+			grpcPort,
+		)
+
+		if err := mdnsService.StartServer(); err != nil {
+			log.Fatalf("Failed to start mDNS server: %v", err)
+		}
+
+		go mdnsService.StartDiscovery(ctx)
+	}
+
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
 	log.Println("Shutting down...")
-	// cancel()
+	cancel()
 
+	if mdnsService != nil {
+		if err := mdnsService.Shutdown(); err != nil {
+			log.Printf("Error shutting down mDNS: %v", err)
+		}
+	}
 }
 
 func SetupHttpServer(
 	frontendFiles embed.FS,
 	profileSvc *service.ProfileService,
+	peerSvc *service.PeerService,
+	database *db.Database,
+	chatSvc *service.ChatService,
+	eventBus *events.EventBus,
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	handler := api.NewAPIHandler(profileSvc)
+	handler := api.NewAPIHandler(profileSvc, database, chatSvc, peerSvc, eventBus)
+
 	mux.HandleFunc("/api/profile/check", handler.CheckProfile)
 
 	mux.HandleFunc("/api/profile", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			panic("not yet implemented")
+			handler.GetPeerById(w, r)
 		case http.MethodPost:
 			handler.CreateProfile(w, r)
 		default:
@@ -94,15 +138,36 @@ func SetupHttpServer(
 	})
 
 	mux.HandleFunc("/api/current-wifi", handler.GetCurrentWifiName)
+	mux.HandleFunc("/api/peers", handler.GetPeers)
+	mux.HandleFunc("/api/events", handler.StreamEvents)
+	mux.HandleFunc("/api/chats", handler.GetChats)
+	mux.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handler.GetMessages(w, r)
+		case http.MethodPost:
+			handler.SendMessage(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Video call signaling routes
+	mux.HandleFunc("/api/call/offer", handler.HandleVideoCallOffer)
+	mux.HandleFunc("/api/call/answer", handler.HandleVideoCallAnswer)
+	mux.HandleFunc("/api/call/ice-candidate", handler.HandleVideoCallICECandidate)
+	mux.HandleFunc("/api/call/hangup", handler.HandleVideoCallHangup)
 
 	frontendFS, _ := fs.Sub(frontendFiles, "frontend/build")
 	mux.Handle("/", http.FileServer(http.FS(frontendFS)))
 
 	return &http.Server{
-		Addr:         ":8080",
-		Handler:      corsMiddleware(mux),
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		Addr:              ":8000",
+		Handler:           corsMiddleware(mux),
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      0, // No timeout for SSE connections
+		IdleTimeout:       120 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 }

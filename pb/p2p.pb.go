@@ -438,6 +438,306 @@ func (x *PeerInfo) GetLastSeen() int64 {
 	return 0
 }
 
+type VideoCallOffer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromPeerId    string                 `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
+	ToPeerId      string                 `protobuf:"bytes,2,opt,name=to_peer_id,json=toPeerId,proto3" json:"to_peer_id,omitempty"`
+	Sdp           string                 `protobuf:"bytes,3,opt,name=sdp,proto3" json:"sdp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VideoCallOffer) Reset() {
+	*x = VideoCallOffer{}
+	mi := &file_p2p_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VideoCallOffer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VideoCallOffer) ProtoMessage() {}
+
+func (x *VideoCallOffer) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VideoCallOffer.ProtoReflect.Descriptor instead.
+func (*VideoCallOffer) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *VideoCallOffer) GetFromPeerId() string {
+	if x != nil {
+		return x.FromPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallOffer) GetToPeerId() string {
+	if x != nil {
+		return x.ToPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallOffer) GetSdp() string {
+	if x != nil {
+		return x.Sdp
+	}
+	return ""
+}
+
+type VideoCallAnswer struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromPeerId    string                 `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
+	ToPeerId      string                 `protobuf:"bytes,2,opt,name=to_peer_id,json=toPeerId,proto3" json:"to_peer_id,omitempty"`
+	Sdp           string                 `protobuf:"bytes,3,opt,name=sdp,proto3" json:"sdp,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VideoCallAnswer) Reset() {
+	*x = VideoCallAnswer{}
+	mi := &file_p2p_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VideoCallAnswer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VideoCallAnswer) ProtoMessage() {}
+
+func (x *VideoCallAnswer) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VideoCallAnswer.ProtoReflect.Descriptor instead.
+func (*VideoCallAnswer) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *VideoCallAnswer) GetFromPeerId() string {
+	if x != nil {
+		return x.FromPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallAnswer) GetToPeerId() string {
+	if x != nil {
+		return x.ToPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallAnswer) GetSdp() string {
+	if x != nil {
+		return x.Sdp
+	}
+	return ""
+}
+
+type VideoCallICECandidate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromPeerId    string                 `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
+	ToPeerId      string                 `protobuf:"bytes,2,opt,name=to_peer_id,json=toPeerId,proto3" json:"to_peer_id,omitempty"`
+	Candidate     string                 `protobuf:"bytes,3,opt,name=candidate,proto3" json:"candidate,omitempty"`
+	SdpMid        string                 `protobuf:"bytes,4,opt,name=sdp_mid,json=sdpMid,proto3" json:"sdp_mid,omitempty"`
+	SdpMlineIndex uint32                 `protobuf:"varint,5,opt,name=sdp_mline_index,json=sdpMlineIndex,proto3" json:"sdp_mline_index,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VideoCallICECandidate) Reset() {
+	*x = VideoCallICECandidate{}
+	mi := &file_p2p_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VideoCallICECandidate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VideoCallICECandidate) ProtoMessage() {}
+
+func (x *VideoCallICECandidate) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VideoCallICECandidate.ProtoReflect.Descriptor instead.
+func (*VideoCallICECandidate) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *VideoCallICECandidate) GetFromPeerId() string {
+	if x != nil {
+		return x.FromPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallICECandidate) GetToPeerId() string {
+	if x != nil {
+		return x.ToPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallICECandidate) GetCandidate() string {
+	if x != nil {
+		return x.Candidate
+	}
+	return ""
+}
+
+func (x *VideoCallICECandidate) GetSdpMid() string {
+	if x != nil {
+		return x.SdpMid
+	}
+	return ""
+}
+
+func (x *VideoCallICECandidate) GetSdpMlineIndex() uint32 {
+	if x != nil {
+		return x.SdpMlineIndex
+	}
+	return 0
+}
+
+type VideoCallHangup struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromPeerId    string                 `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
+	ToPeerId      string                 `protobuf:"bytes,2,opt,name=to_peer_id,json=toPeerId,proto3" json:"to_peer_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VideoCallHangup) Reset() {
+	*x = VideoCallHangup{}
+	mi := &file_p2p_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VideoCallHangup) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VideoCallHangup) ProtoMessage() {}
+
+func (x *VideoCallHangup) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VideoCallHangup.ProtoReflect.Descriptor instead.
+func (*VideoCallHangup) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *VideoCallHangup) GetFromPeerId() string {
+	if x != nil {
+		return x.FromPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallHangup) GetToPeerId() string {
+	if x != nil {
+		return x.ToPeerId
+	}
+	return ""
+}
+
+func (x *VideoCallHangup) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type VideoCallAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VideoCallAck) Reset() {
+	*x = VideoCallAck{}
+	mi := &file_p2p_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VideoCallAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VideoCallAck) ProtoMessage() {}
+
+func (x *VideoCallAck) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VideoCallAck.ProtoReflect.Descriptor instead.
+func (*VideoCallAck) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *VideoCallAck) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_p2p_proto protoreflect.FileDescriptor
 
 const file_p2p_proto_rawDesc = "" +
@@ -471,16 +771,48 @@ const file_p2p_proto_rawDesc = "" +
 	"\apeer_id\x18\x01 \x01(\tR\x06peerId\x12\x1b\n" +
 	"\tuser_name\x18\x02 \x01(\tR\buserName\x12\x1b\n" +
 	"\twifi_name\x18\x03 \x01(\tR\bwifiName\x12\x1b\n" +
-	"\tlast_seen\x18\x04 \x01(\x03R\blastSeen*,\n" +
+	"\tlast_seen\x18\x04 \x01(\x03R\blastSeen\"b\n" +
+	"\x0eVideoCallOffer\x12 \n" +
+	"\ffrom_peer_id\x18\x01 \x01(\tR\n" +
+	"fromPeerId\x12\x1c\n" +
+	"\n" +
+	"to_peer_id\x18\x02 \x01(\tR\btoPeerId\x12\x10\n" +
+	"\x03sdp\x18\x03 \x01(\tR\x03sdp\"c\n" +
+	"\x0fVideoCallAnswer\x12 \n" +
+	"\ffrom_peer_id\x18\x01 \x01(\tR\n" +
+	"fromPeerId\x12\x1c\n" +
+	"\n" +
+	"to_peer_id\x18\x02 \x01(\tR\btoPeerId\x12\x10\n" +
+	"\x03sdp\x18\x03 \x01(\tR\x03sdp\"\xb6\x01\n" +
+	"\x15VideoCallICECandidate\x12 \n" +
+	"\ffrom_peer_id\x18\x01 \x01(\tR\n" +
+	"fromPeerId\x12\x1c\n" +
+	"\n" +
+	"to_peer_id\x18\x02 \x01(\tR\btoPeerId\x12\x1c\n" +
+	"\tcandidate\x18\x03 \x01(\tR\tcandidate\x12\x17\n" +
+	"\asdp_mid\x18\x04 \x01(\tR\x06sdpMid\x12&\n" +
+	"\x0fsdp_mline_index\x18\x05 \x01(\rR\rsdpMlineIndex\"i\n" +
+	"\x0fVideoCallHangup\x12 \n" +
+	"\ffrom_peer_id\x18\x01 \x01(\tR\n" +
+	"fromPeerId\x12\x1c\n" +
+	"\n" +
+	"to_peer_id\x18\x02 \x01(\tR\btoPeerId\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"(\n" +
+	"\fVideoCallAck\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess*,\n" +
 	"\vMessageType\x12\b\n" +
 	"\x04TEXT\x10\x00\x12\t\n" +
 	"\x05IMAGE\x10\x01\x12\b\n" +
-	"\x04FILE\x10\x022\x98\x01\n" +
+	"\x04FILE\x10\x022\xae\x03\n" +
 	"\x0eP2PChatService\x12/\n" +
 	"\x0eReceiveMessage\x12\f.p2p.Message\x1a\x0f.p2p.MessageAck\x12+\n" +
 	"\x04Ping\x12\x10.p2p.PingRequest\x1a\x11.p2p.PingResponse\x12(\n" +
 	"\vGetPeerInfo\x12\n" +
-	".p2p.Empty\x1a\r.p2p.PeerInfoB\x0fZ\rp2pchat2.0/pbb\x06proto3"
+	".p2p.Empty\x1a\r.p2p.PeerInfo\x12?\n" +
+	"\x15ReceiveVideoCallOffer\x12\x13.p2p.VideoCallOffer\x1a\x11.p2p.VideoCallAck\x12A\n" +
+	"\x16ReceiveVideoCallAnswer\x12\x14.p2p.VideoCallAnswer\x1a\x11.p2p.VideoCallAck\x12M\n" +
+	"\x1cReceiveVideoCallICECandidate\x12\x1a.p2p.VideoCallICECandidate\x1a\x11.p2p.VideoCallAck\x12A\n" +
+	"\x16ReceiveVideoCallHangup\x12\x14.p2p.VideoCallHangup\x1a\x11.p2p.VideoCallAckB\x0fZ\rp2pchat2.0/pbb\x06proto3"
 
 var (
 	file_p2p_proto_rawDescOnce sync.Once
@@ -495,29 +827,42 @@ func file_p2p_proto_rawDescGZIP() []byte {
 }
 
 var file_p2p_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_p2p_proto_goTypes = []any{
-	(MessageType)(0),     // 0: p2p.MessageType
-	(*Empty)(nil),        // 1: p2p.Empty
-	(*Message)(nil),      // 2: p2p.Message
-	(*MessageAck)(nil),   // 3: p2p.MessageAck
-	(*PingRequest)(nil),  // 4: p2p.PingRequest
-	(*PingResponse)(nil), // 5: p2p.PingResponse
-	(*PeerInfo)(nil),     // 6: p2p.PeerInfo
+	(MessageType)(0),              // 0: p2p.MessageType
+	(*Empty)(nil),                 // 1: p2p.Empty
+	(*Message)(nil),               // 2: p2p.Message
+	(*MessageAck)(nil),            // 3: p2p.MessageAck
+	(*PingRequest)(nil),           // 4: p2p.PingRequest
+	(*PingResponse)(nil),          // 5: p2p.PingResponse
+	(*PeerInfo)(nil),              // 6: p2p.PeerInfo
+	(*VideoCallOffer)(nil),        // 7: p2p.VideoCallOffer
+	(*VideoCallAnswer)(nil),       // 8: p2p.VideoCallAnswer
+	(*VideoCallICECandidate)(nil), // 9: p2p.VideoCallICECandidate
+	(*VideoCallHangup)(nil),       // 10: p2p.VideoCallHangup
+	(*VideoCallAck)(nil),          // 11: p2p.VideoCallAck
 }
 var file_p2p_proto_depIdxs = []int32{
-	0, // 0: p2p.Message.type:type_name -> p2p.MessageType
-	2, // 1: p2p.P2PChatService.ReceiveMessage:input_type -> p2p.Message
-	4, // 2: p2p.P2PChatService.Ping:input_type -> p2p.PingRequest
-	1, // 3: p2p.P2PChatService.GetPeerInfo:input_type -> p2p.Empty
-	3, // 4: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
-	5, // 5: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
-	6, // 6: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0,  // 0: p2p.Message.type:type_name -> p2p.MessageType
+	2,  // 1: p2p.P2PChatService.ReceiveMessage:input_type -> p2p.Message
+	4,  // 2: p2p.P2PChatService.Ping:input_type -> p2p.PingRequest
+	1,  // 3: p2p.P2PChatService.GetPeerInfo:input_type -> p2p.Empty
+	7,  // 4: p2p.P2PChatService.ReceiveVideoCallOffer:input_type -> p2p.VideoCallOffer
+	8,  // 5: p2p.P2PChatService.ReceiveVideoCallAnswer:input_type -> p2p.VideoCallAnswer
+	9,  // 6: p2p.P2PChatService.ReceiveVideoCallICECandidate:input_type -> p2p.VideoCallICECandidate
+	10, // 7: p2p.P2PChatService.ReceiveVideoCallHangup:input_type -> p2p.VideoCallHangup
+	3,  // 8: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
+	5,  // 9: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
+	6,  // 10: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
+	11, // 11: p2p.P2PChatService.ReceiveVideoCallOffer:output_type -> p2p.VideoCallAck
+	11, // 12: p2p.P2PChatService.ReceiveVideoCallAnswer:output_type -> p2p.VideoCallAck
+	11, // 13: p2p.P2PChatService.ReceiveVideoCallICECandidate:output_type -> p2p.VideoCallAck
+	11, // 14: p2p.P2PChatService.ReceiveVideoCallHangup:output_type -> p2p.VideoCallAck
+	8,  // [8:15] is the sub-list for method output_type
+	1,  // [1:8] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_p2p_proto_init() }
@@ -531,7 +876,7 @@ func file_p2p_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_p2p_proto_rawDesc), len(file_p2p_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   6,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

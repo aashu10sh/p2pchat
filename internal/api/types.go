@@ -51,9 +51,9 @@ type MessageListResponse struct {
 }
 
 type SendMessageRequest struct {
-	ToPeerID string `json:"to_peer_id" binding:"required"`
-	Content  string `json:"content" binding:"required"`
-	Type     string `json:"type"`
+	ToPeerID    string `json:"to_peer_id" binding:"required"`
+	Content     string `json:"content" binding:"required"`
+	MessageType string `json:"message_type"`
 }
 
 type SendMessageResponse struct {
@@ -64,4 +64,28 @@ type SendMessageResponse struct {
 
 type ErrorResponse struct {
 	Error string `json:"error"`
+}
+
+// Video call signaling request types
+
+type VideoCallOfferRequest struct {
+	ToPeerID string `json:"to_peer_id"`
+	SDP      string `json:"sdp"`
+}
+
+type VideoCallAnswerRequest struct {
+	ToPeerID string `json:"to_peer_id"`
+	SDP      string `json:"sdp"`
+}
+
+type VideoCallICECandidateRequest struct {
+	ToPeerID      string `json:"to_peer_id"`
+	Candidate     string `json:"candidate"`
+	SDPMid        string `json:"sdp_mid"`
+	SDPMLineIndex uint32 `json:"sdp_mline_index"`
+}
+
+type VideoCallHangupRequest struct {
+	ToPeerID string `json:"to_peer_id"`
+	Reason   string `json:"reason"`
 }

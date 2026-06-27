@@ -11,8 +11,12 @@ service P2PChatService {
   rpc Ping(PingRequest) returns (PingResponse);
   // RPC for getting another peers info.
   rpc GetPeerInfo(Empty) returns (PeerInfo);
-  // RPC for streaming messages to other nodes.
-  // rpc StreamMessages(Empty) returns (stream Message);
+
+  // Video call signaling RPCs — backend acts as passthrough, routing these between peers.
+  rpc ReceiveVideoCallOffer(VideoCallOffer) returns (VideoCallAck);
+  rpc ReceiveVideoCallAnswer(VideoCallAnswer) returns (VideoCallAck);
+  rpc ReceiveVideoCallICECandidate(VideoCallICECandidate) returns (VideoCallAck);
+  rpc ReceiveVideoCallHangup(VideoCallHangup) returns (VideoCallAck);
 }
 
 message Empty {}
@@ -55,4 +59,36 @@ message PeerInfo {
   string user_name = 2;
   string wifi_name = 3;
   int64 last_seen = 4;
+}
+
+// Video call signaling messages
+
+message VideoCallOffer {
+  string from_peer_id = 1;
+  string to_peer_id = 2;
+  string sdp = 3;
+}
+
+message VideoCallAnswer {
+  string from_peer_id = 1;
+  string to_peer_id = 2;
+  string sdp = 3;
+}
+
+message VideoCallICECandidate {
+  string from_peer_id = 1;
+  string to_peer_id = 2;
+  string candidate = 3;
+  string sdp_mid = 4;
+  uint32 sdp_mline_index = 5;
+}
+
+message VideoCallHangup {
+  string from_peer_id = 1;
+  string to_peer_id = 2;
+  string reason = 3;
+}
+
+message VideoCallAck {
+  bool success = 1;
 }

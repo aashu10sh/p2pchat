@@ -59,6 +59,10 @@ func (d *Database) GetChatByPeers(selfPeerId string, theirPeerId string) (*Chat,
 func (d *Database) GetPeerByID(peerId string) (*Peer, error) {
 	var peer Peer
 
+	if peerId == "" {
+		return nil, errors.New("unknown user name")
+	}
+
 	err := d.Db.Where(&Peer{PeerId: peerId}).First(&peer).Error
 
 	if err != nil {
@@ -96,4 +100,68 @@ func (d *Database) UpdateChat(chat *Chat) error {
 func (d *Database) UpdateMessage(msg *Message) error {
 	tx := d.Db.Save(msg)
 	return tx.Error
+}
+
+func (d *Database) GetMessagesByChatID(chatID uint, limit int) ([]*Message, error) {
+	var messages []*Message
+
+	query := d.Db.Where("chat_id = ?", chatID).Order("sent_at DESC")
+	if limit > 0 {
+		query = query.Limit(limit)
+	}
+
+	err := query.Find(&messages).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return messages, nil
+}
+
+func (d *Database) GetChatsByPeerID(peerID string) ([]*Chat, error) {
+	var chats []*Chat
+
+	err := d.Db.Where("my_peer_id = ?", peerID).Order("last_message_at DESC").Find(&chats).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return chats, nil
+}
+
+func (d *Database) GetChatByID(chatID uint) (*Chat, error) {
+	var chat Chat
+
+	err := d.Db.Where("id = ?", chatID).First(&chat).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &chat, nil
+}
+
+func (d *Database) CreatePeer(peer *Peer) error {
+	d.Db.Create(peer)
+
+	if peer.ID == 0 {
+		return errors.New("could not create peer!")
+	}
+
+	return nil
+}
+
+func (d *Database) UpdatePeer(peer *Peer) error {
+	tx := d.Db.Save(peer)
+	return tx.Error
+}
+
+func (d *Database) GetAllPeers() ([]*Peer, error) {
+	var peers []*Peer
+
+	err := d.Db.Order("last_seen DESC").Find(&peers).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return peers, nil
 }

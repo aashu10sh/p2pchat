@@ -121,6 +121,9 @@ func (s *ChatService) SendMessage(toPeerID, content, msgType string) (string, er
 	dbMsg.DeliveredAt = &now
 	s.db.UpdateMessage(dbMsg)
 
+	// Set computed field before publishing so the UI knows this is our own message
+	dbMsg.IsSentByMe = true
+
 	// Publish event for local UI update
 	s.eventBus.Publish(events.Event{
 		Type: "message_sent",
@@ -169,7 +172,69 @@ func (s *ChatService) SaveIncomingMessage(msg *pb.Message) error {
 	// Set computed field
 	dbMsg.IsSentByMe = dbMsg.FromPeerID == profile.PeerId
 
+	// Publish event for real-time UI update
+	s.eventBus.Publish(events.Event{
+		Type: "message_received",
+		Data: dbMsg,
+	})
+
 	return nil
+}
+
+// Video call signaling — these are pure passthrough, no persistence needed.
+
+func (s *ChatService) SendVideoCallOffer(toPeerID, sdp string) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallOffer(toPeerID, &pb.VideoCallOffer{
+		FromPeerId: profile.PeerId,
+		ToPeerId:   toPeerID,
+		Sdp:        sdp,
+	})
+}
+
+func (s *ChatService) SendVideoCallAnswer(toPeerID, sdp string) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallAnswer(toPeerID, &pb.VideoCallAnswer{
+		FromPeerId: profile.PeerId,
+		ToPeerId:   toPeerID,
+		Sdp:        sdp,
+	})
+}
+
+func (s *ChatService) SendVideoCallICECandidate(toPeerID, candidate, sdpMid string, sdpMLineIndex uint32) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallICECandidate(toPeerID, &pb.VideoCallICECandidate{
+		FromPeerId:    profile.PeerId,
+		ToPeerId:      toPeerID,
+		Candidate:     candidate,
+		SdpMid:        sdpMid,
+		SdpMlineIndex: sdpMLineIndex,
+	})
+}
+
+func (s *ChatService) SendVideoCallHangup(toPeerID, reason string) error {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return err
+	}
+
+	return s.peerMgr.SendVideoCallHangup(toPeerID, &pb.VideoCallHangup{
+		FromPeerId: profile.PeerId,
+		ToPeerId:   toPeerID,
+		Reason:     reason,
+	})
 }
 
 // GetMessages - retrieves messages for a chat

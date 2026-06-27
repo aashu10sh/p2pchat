@@ -36,11 +36,6 @@ func (s *P2PChatServer) ReceiveMessage(ctx context.Context, msg *pb.Message) (*p
 		return &pb.MessageAck{Success: false, Error: err.Error()}, nil
 	}
 
-	s.eventBus.Publish(events.Event{
-		Type: "message_received",
-		Data: msg,
-	})
-
 	return &pb.MessageAck{
 		Success:   true,
 		MessageId: msg.Id,
@@ -73,4 +68,53 @@ func (s *P2PChatServer) Ping(ctx context.Context, pingRequest *pb.PingRequest) (
 		UserName:  self.UserName,
 		Timestamp: time.Now().Unix(),
 	}, nil
+}
+
+// Video call signaling handlers — each publishes the received signaling data
+// to the event bus so it reaches the local browser via SSE.
+
+func (s *P2PChatServer) ReceiveVideoCallOffer(ctx context.Context, offer *pb.VideoCallOffer) (*pb.VideoCallAck, error) {
+	s.eventBus.Publish(events.Event{
+		Type: "video_call_offer",
+		Data: map[string]string{
+			"from_peer_id": offer.FromPeerId,
+			"sdp":          offer.Sdp,
+		},
+	})
+	return &pb.VideoCallAck{Success: true}, nil
+}
+
+func (s *P2PChatServer) ReceiveVideoCallAnswer(ctx context.Context, answer *pb.VideoCallAnswer) (*pb.VideoCallAck, error) {
+	s.eventBus.Publish(events.Event{
+		Type: "video_call_answer",
+		Data: map[string]string{
+			"from_peer_id": answer.FromPeerId,
+			"sdp":          answer.Sdp,
+		},
+	})
+	return &pb.VideoCallAck{Success: true}, nil
+}
+
+func (s *P2PChatServer) ReceiveVideoCallICECandidate(ctx context.Context, ice *pb.VideoCallICECandidate) (*pb.VideoCallAck, error) {
+	s.eventBus.Publish(events.Event{
+		Type: "video_call_ice_candidate",
+		Data: map[string]interface{}{
+			"from_peer_id":    ice.FromPeerId,
+			"candidate":       ice.Candidate,
+			"sdp_mid":         ice.SdpMid,
+			"sdp_mline_index": ice.SdpMlineIndex,
+		},
+	})
+	return &pb.VideoCallAck{Success: true}, nil
+}
+
+func (s *P2PChatServer) ReceiveVideoCallHangup(ctx context.Context, hangup *pb.VideoCallHangup) (*pb.VideoCallAck, error) {
+	s.eventBus.Publish(events.Event{
+		Type: "video_call_hangup",
+		Data: map[string]string{
+			"from_peer_id": hangup.FromPeerId,
+			"reason":       hangup.Reason,
+		},
+	})
+	return &pb.VideoCallAck{Success: true}, nil
 }

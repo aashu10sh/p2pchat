@@ -1,3 +1,110 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+:root {
+	/* ── Surface Colors ── */
+	--bg-primary: #ffffff;
+	--bg-secondary: #f5f5f7;
+	--bg-tertiary: #e8e8ed;
+	--bg-dark: #1d1d1f;
+
+	/* ── Text Colors ── */
+	--text-primary: #1d1d1f;
+	--text-secondary: #86868b;
+	--text-tertiary: #aeaeb2;
+	--text-inverse: #ffffff;
+
+	/* ── Accent ── */
+	--accent: #007aff;
+	--accent-hover: #0062d6;
+	--accent-light: rgba(0, 122, 255, 0.08);
+	--accent-medium: rgba(0, 122, 255, 0.15);
+
+	/* ── Status ── */
+	--success: #34c759;
+	--danger: #ff3b30;
+	--danger-hover: #d62d23;
+	--warning: #ff9f0a;
+
+	/* ── Borders ── */
+	--border-color: rgba(0, 0, 0, 0.06);
+	--border-hover: rgba(0, 0, 0, 0.12);
+	--border-focus: var(--accent);
+
+	/* ── Glass ── */
+	--glass-bg: rgba(255, 255, 255, 0.72);
+	--glass-bg-heavy: rgba(255, 255, 255, 0.88);
+	--glass-border: rgba(255, 255, 255, 0.2);
+	--glass-blur: 20px;
+	--glass-blur-heavy: 40px;
+
+	/* ── Shadows ── */
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+	--shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+	--shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.08);
+	--shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
+
+	/* ── Typography ── */
+	--font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+		'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Courier New',
+		monospace;
+
+	/* ── Radii ── */
+	--radius-sm: 8px;
+	--radius-md: 12px;
+	--radius-lg: 16px;
+	--radius-xl: 20px;
+	--radius-2xl: 24px;
+	--radius-full: 9999px;
+
+	/* ── Transitions ── */
+	--transition-fast: 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
+	--transition-normal: 250ms cubic-bezier(0.25, 0.1, 0.25, 1);
+	--transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-family: var(--font-sans);
+	background-color: var(--bg-secondary);
+	color: var(--text-primary);
+	overflow: hidden;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+	line-height: 1.5;
+}
+
+/* ── Selection ── */
+::selection {
+	background-color: var(--accent-medium);
+	color: var(--text-primary);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+	width: 6px;
+	height: 6px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.15);
+	border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.25);
+}
