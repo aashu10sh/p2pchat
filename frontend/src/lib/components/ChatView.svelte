@@ -4,6 +4,7 @@
 	import { peers } from '$lib/services/peerService';
 	import { startCall } from '$lib/services/callService';
 	import FileSharing from '$lib/components/FileSharing.svelte';
+	import CallHistoryView from '$lib/components/CallHistory.svelte';
 	import type { Message } from '$lib/entites/message';
 	import type { Peer } from '$lib/entites/peer';
 	import {
@@ -28,7 +29,7 @@
 	let currentPeer = $state<Peer | null>(null);
 	let inputRef = $state<HTMLInputElement | null>(null);
 	let isFocused = $state(false);
-	let currentTab = $state<'chat' | 'files'>('chat');
+	let currentTab = $state<'chat' | 'files' | 'calls'>('chat');
 
 	const chatService = new ChatService();
 
@@ -180,6 +181,13 @@
 				>
 					Files
 				</button>
+				<button 
+					class="tab-btn" 
+					class:active={currentTab === 'calls'} 
+					onclick={() => currentTab = 'calls'}
+				>
+					Calls
+				</button>
 			</div>
 
 			<div class="header-actions">
@@ -287,8 +295,10 @@
 					</button>
 				</div>
 			</form>
-		{:else}
+		{:else if currentTab === 'files'}
 			<FileSharing {activePeer} />
+		{:else}
+			<CallHistoryView {activePeer} />
 		{/if}
 	</div>
 {/if}

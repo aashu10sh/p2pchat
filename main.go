@@ -159,6 +159,16 @@ func SetupHttpServer(
 	mux.HandleFunc("/api/call/answer", handler.HandleVideoCallAnswer)
 	mux.HandleFunc("/api/call/ice-candidate", handler.HandleVideoCallICECandidate)
 	mux.HandleFunc("/api/call/hangup", handler.HandleVideoCallHangup)
+	mux.HandleFunc("/api/call/history", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handler.HandleGetCallHistories(w, r)
+		case http.MethodPost:
+			handler.HandleSaveCallHistory(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	// File transfer routes
 	mux.HandleFunc("/api/files/send", handler.HandleSendFile)

@@ -33,6 +33,7 @@ func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(&Chat{})
 	db.AutoMigrate(&Message{})
 	db.AutoMigrate(&FileTransfer{})
+	db.AutoMigrate(&CallHistory{})
 }
 
 type Database struct {
@@ -184,4 +185,23 @@ func (d *Database) GetFileTransfersByPeer(selfPeerID, theirPeerID string) ([]*Fi
 	}
 
 	return transfers, nil
+}
+
+func (d *Database) CreateCallHistory(ch *CallHistory) error {
+	return d.Db.Create(ch).Error
+}
+
+func (d *Database) GetCallHistoriesByPeer(selfPeerID, theirPeerID string) ([]*CallHistory, error) {
+	var calls []*CallHistory
+
+	err := d.Db.Where(
+		"(from_peer_id = ? AND to_peer_id = ?) OR (from_peer_id = ? AND to_peer_id = ?)",
+		selfPeerID, theirPeerID, theirPeerID, selfPeerID,
+	).Order("created_at DESC").Find(&calls).Error
+	
+	if err != nil {
+		return nil, err
+	}
+
+	return calls, nil
 }

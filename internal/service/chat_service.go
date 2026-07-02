@@ -237,6 +237,44 @@ func (s *ChatService) SendVideoCallHangup(toPeerID, reason string) error {
 	})
 }
 
+// Call History methods
+
+func (s *ChatService) SaveCallHistory(toPeerID, status string, duration int, direction string) (*db.CallHistory, error) {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return nil, err
+	}
+
+	callHistory := &db.CallHistory{
+		FromPeerID: profile.PeerId,
+		ToPeerID:   toPeerID,
+		Status:     status,
+		Duration:   duration,
+		Direction:  direction,
+	}
+
+	if err := s.db.CreateCallHistory(callHistory); err != nil {
+		return nil, fmt.Errorf("failed to save call history: %w", err)
+	}
+
+	// Publish event for real-time UI update if needed
+	s.eventBus.Publish(events.Event{
+		Type: "call_history_saved",
+		Data: callHistory,
+	})
+
+	return callHistory, nil
+}
+
+func (s *ChatService) GetCallHistories(peerID string) ([]*db.CallHistory, error) {
+	profile, err := s.profileSvc.GetCurrentProfile()
+	if err != nil {
+		return nil, err
+	}
+
+	return s.db.GetCallHistoriesByPeer(profile.PeerId, peerID)
+}
+
 // GetMessages - retrieves messages for a chat
 func (s *ChatService) GetMessages(peerID string, limit int) ([]*db.Message, error) {
 	profile, err := s.profileSvc.GetCurrentProfile()

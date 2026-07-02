@@ -63,3 +63,12 @@ type FileTransfer struct {
 	FilePath   string `json:"file_path"` // absolute path on disk
 	Direction  string `json:"direction"` // "sent" or "received"
 }
+
+type CallHistory struct {
+	gorm.Model
+	FromPeerID string `gorm:"index" json:"from_peer_id"`
+	ToPeerID   string `gorm:"index" json:"to_peer_id"`
+	Status     string `json:"status"`   // "missed", "completed", "rejected"
+	Duration   int    `json:"duration"` // duration in seconds
+	Direction  string `json:"direction"` // "incoming" or "outgoing"
+}

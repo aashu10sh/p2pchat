@@ -18,6 +18,9 @@ export const incomingCall = writable<IncomingCallData | null>(null);
 export const mediaError = writable<string | null>(null);
 
 let pc: RTCPeerConnection | null = null;
+let callDirection: 'incoming' | 'outgoing' | null = null;
+let callStartTime: number | null = null;
+let callStatus: 'completed' | 'missed' | 'rejected' = 'missed';
 
 // Queues ICE candidates received before remote description is set
 let pendingICECandidates: RTCIceCandidateInit[] = [];
@@ -85,8 +88,12 @@ function createPeerConnection(): RTCPeerConnection {
 		if (!pc) return;
 		switch (pc.iceConnectionState) {
 			case 'connected':
-			case 'completed':
-				callState.set('connected');
+		case 'completed':
+				if (get(callState) !== 'connected') {
+					callStartTime = Date.now();
+					callStatus = 'completed';
+					callState.set('connected');
+				}
 				break;
 			case 'disconnected':
 			case 'failed':
@@ -109,6 +116,9 @@ export async function startCall(peerId: string, peerName: string): Promise<void>
 	remotePeerId.set(peerId);
 	remotePeerName.set(peerName);
 	callState.set('calling');
+	callDirection = 'outgoing';
+	callStatus = 'missed';
+	callStartTime = null;
 
 	try {
 		const stream = await getLocalMedia();
@@ -145,6 +155,8 @@ export async function acceptCall(): Promise<void> {
 	if (!incoming || !pc) return;
 
 	callState.set('connected');
+	callStatus = 'completed';
+	if (!callStartTime) callStartTime = Date.now();
 
 	try {
 		const answer = await pc.createAnswer();
@@ -188,6 +200,7 @@ export async function rejectCall(): Promise<void> {
 		})
 	}).catch((err) => console.error('Failed to send reject:', err));
 
+	callStatus = 'rejected';
 	incomingCall.set(null);
 	cleanup();
 	callState.set('idle');
@@ -235,6 +248,9 @@ export async function handleRemoteOffer(
 	remotePeerId.set(fromPeerId);
 	remotePeerName.set(fromUsername);
 	callState.set('ringing');
+	callDirection = 'incoming';
+	callStatus = 'missed';
+	callStartTime = null;
 
 	try {
 		const stream = await getLocalMedia();
@@ -275,6 +291,8 @@ export async function handleRemoteAnswer(sdp: string): Promise<void> {
 		pendingICECandidates = [];
 
 		callState.set('connected');
+		callStatus = 'completed';
+		if (!callStartTime) callStartTime = Date.now();
 	} catch (err) {
 		console.error('Failed to handle remote answer:', err);
 	}
@@ -314,6 +332,27 @@ export function handleRemoteHangup(): void {
 }
 
 function cleanup(): void {
+	const peerId = get(remotePeerId);
+	if (peerId && callDirection) {
+		let duration = 0;
+		if (callStartTime) {
+			duration = Math.floor((Date.now() - callStartTime) / 1000);
+		}
+		fetch('http://localhost:8000/api/call/history', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				to_peer_id: peerId,
+				status: callStatus,
+				duration: duration,
+				direction: callDirection
+			})
+		}).catch(console.error);
+	}
+
+	callDirection = null;
+	callStartTime = null;
+
 	if (pc) {
 		pc.close();
 		pc = null;

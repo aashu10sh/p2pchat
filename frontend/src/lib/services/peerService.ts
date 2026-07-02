@@ -7,6 +7,8 @@ import { messages } from './chatService';
 import { sortMessagesByTimestamp } from '$lib/utils';
 import { fileTransfers } from './fileService';
 import type { FileTransfer } from '$lib/entites/fileTransfer';
+import { callHistories } from './callHistoryService';
+import type { CallHistory } from '$lib/entites/callHistory';
 import {
 	handleRemoteOffer,
 	handleRemoteAnswer,
@@ -139,6 +141,15 @@ export default class PeerService {
 				fileTransfers.update((fts) => [ft, ...fts]);
 			} catch (e) {
 				console.error('Failed to parse file sent event:', e);
+			}
+		});
+
+		this.eventSource.addEventListener('call_history_saved', (event) => {
+			try {
+				const ch = JSON.parse(event.data) as CallHistory;
+				callHistories.update((chs) => [ch, ...chs]);
+			} catch (e) {
+				console.error('Failed to parse call history event:', e);
 			}
 		});
 

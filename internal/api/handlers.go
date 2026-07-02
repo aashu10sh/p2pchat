@@ -443,3 +443,62 @@ func (h *APIHandler) HandleGetFileTransfers(w http.ResponseWriter, r *http.Reque
 
 	respondJSON(w, http.StatusOK, response)
 }
+
+// Call history handlers
+
+func (h *APIHandler) HandleSaveCallHistory(w http.ResponseWriter, r *http.Request) {
+	var req SaveCallHistoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.ToPeerID == "" || req.Status == "" || req.Direction == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id, status and direction are required")
+		return
+	}
+
+	history, err := h.chatSvc.SaveCallHistory(req.ToPeerID, req.Status, req.Duration, req.Direction)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to save call history: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"status": "call_history_saved",
+		"id": history.ID,
+	})
+}
+
+func (h *APIHandler) HandleGetCallHistories(w http.ResponseWriter, r *http.Request) {
+	peerID := r.URL.Query().Get("peer_id")
+	if peerID == "" {
+		respondError(w, http.StatusBadRequest, "peer_id is required")
+		return
+	}
+
+	histories, err := h.chatSvc.GetCallHistories(peerID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to fetch call histories: "+err.Error())
+		return
+	}
+
+	var response []CallHistoryResponse
+	for _, h := range histories {
+		response = append(response, CallHistoryResponse{
+			ID:         h.ID,
+			FromPeerID: h.FromPeerID,
+			ToPeerID:   h.ToPeerID,
+			Status:     h.Status,
+			Duration:   h.Duration,
+			Direction:  h.Direction,
+			CreatedAt:  h.CreatedAt,
+		})
+	}
+	
+	if response == nil {
+		response = []CallHistoryResponse{}
+	}
+
+	respondJSON(w, http.StatusOK, response)
+}

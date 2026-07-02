@@ -106,3 +106,20 @@ type FileTransferResponse struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+type SaveCallHistoryRequest struct {
+	ToPeerID  string `json:"to_peer_id" binding:"required"`
+	Status    string `json:"status" binding:"required"`
+	Duration  int    `json:"duration"`
+	Direction string `json:"direction" binding:"required"`
+}
+
+type CallHistoryResponse struct {
+	ID         uint      `json:"id"`
+	FromPeerID string    `json:"from_peer_id"`
+	ToPeerID   string    `json:"to_peer_id"`
+	Status     string    `json:"status"`
+	Duration   int       `json:"duration"`
+	Direction  string    `json:"direction"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
