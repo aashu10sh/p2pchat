@@ -14,17 +14,20 @@ type P2PChatServer struct {
 	pb.UnimplementedP2PChatServiceServer
 	profileSvc *service.ProfileService
 	chatSvc    *service.ChatService
+	fileSvc    *service.FileService
 	eventBus   *events.EventBus
 }
 
 func NewP2PChatServer(
 	chatSvc *service.ChatService,
 	profileSvc *service.ProfileService,
+	fileSvc *service.FileService,
 	eventBus *events.EventBus,
 ) *P2PChatServer {
 	return &P2PChatServer{
 		profileSvc: profileSvc,
 		chatSvc:    chatSvc,
+		fileSvc:    fileSvc,
 		eventBus:   eventBus,
 	}
 }
@@ -117,4 +120,8 @@ func (s *P2PChatServer) ReceiveVideoCallHangup(ctx context.Context, hangup *pb.V
 		},
 	})
 	return &pb.VideoCallAck{Success: true}, nil
+}
+
+func (s *P2PChatServer) ReceiveFile(stream pb.P2PChatService_ReceiveFileServer) error {
+	return s.fileSvc.SaveIncomingFile(stream)
 }

@@ -738,6 +738,158 @@ func (x *VideoCallAck) GetSuccess() bool {
 	return false
 }
 
+type FileChunk struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FromPeerId    string                 `protobuf:"bytes,1,opt,name=from_peer_id,json=fromPeerId,proto3" json:"from_peer_id,omitempty"`
+	ToPeerId      string                 `protobuf:"bytes,2,opt,name=to_peer_id,json=toPeerId,proto3" json:"to_peer_id,omitempty"`
+	FileName      string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	FileSize      int64                  `protobuf:"varint,4,opt,name=file_size,json=fileSize,proto3" json:"file_size,omitempty"` // total file size in bytes
+	Data          []byte                 `protobuf:"bytes,5,opt,name=data,proto3" json:"data,omitempty"`                          // chunk payload
+	ChunkIndex    uint32                 `protobuf:"varint,6,opt,name=chunk_index,json=chunkIndex,proto3" json:"chunk_index,omitempty"`
+	TotalChunks   uint32                 `protobuf:"varint,7,opt,name=total_chunks,json=totalChunks,proto3" json:"total_chunks,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FileChunk) Reset() {
+	*x = FileChunk{}
+	mi := &file_p2p_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileChunk) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileChunk) ProtoMessage() {}
+
+func (x *FileChunk) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileChunk.ProtoReflect.Descriptor instead.
+func (*FileChunk) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *FileChunk) GetFromPeerId() string {
+	if x != nil {
+		return x.FromPeerId
+	}
+	return ""
+}
+
+func (x *FileChunk) GetToPeerId() string {
+	if x != nil {
+		return x.ToPeerId
+	}
+	return ""
+}
+
+func (x *FileChunk) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *FileChunk) GetFileSize() int64 {
+	if x != nil {
+		return x.FileSize
+	}
+	return 0
+}
+
+func (x *FileChunk) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *FileChunk) GetChunkIndex() uint32 {
+	if x != nil {
+		return x.ChunkIndex
+	}
+	return 0
+}
+
+func (x *FileChunk) GetTotalChunks() uint32 {
+	if x != nil {
+		return x.TotalChunks
+	}
+	return 0
+}
+
+type FileTransferAck struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	FilePath      string                 `protobuf:"bytes,2,opt,name=file_path,json=filePath,proto3" json:"file_path,omitempty"` // where the file was saved on the receiver's disk
+	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FileTransferAck) Reset() {
+	*x = FileTransferAck{}
+	mi := &file_p2p_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileTransferAck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileTransferAck) ProtoMessage() {}
+
+func (x *FileTransferAck) ProtoReflect() protoreflect.Message {
+	mi := &file_p2p_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileTransferAck.ProtoReflect.Descriptor instead.
+func (*FileTransferAck) Descriptor() ([]byte, []int) {
+	return file_p2p_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *FileTransferAck) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *FileTransferAck) GetFilePath() string {
+	if x != nil {
+		return x.FilePath
+	}
+	return ""
+}
+
+func (x *FileTransferAck) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 var File_p2p_proto protoreflect.FileDescriptor
 
 const file_p2p_proto_rawDesc = "" +
@@ -799,11 +951,26 @@ const file_p2p_proto_rawDesc = "" +
 	"to_peer_id\x18\x02 \x01(\tR\btoPeerId\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reason\"(\n" +
 	"\fVideoCallAck\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess*,\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xdd\x01\n" +
+	"\tFileChunk\x12 \n" +
+	"\ffrom_peer_id\x18\x01 \x01(\tR\n" +
+	"fromPeerId\x12\x1c\n" +
+	"\n" +
+	"to_peer_id\x18\x02 \x01(\tR\btoPeerId\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12\x1b\n" +
+	"\tfile_size\x18\x04 \x01(\x03R\bfileSize\x12\x12\n" +
+	"\x04data\x18\x05 \x01(\fR\x04data\x12\x1f\n" +
+	"\vchunk_index\x18\x06 \x01(\rR\n" +
+	"chunkIndex\x12!\n" +
+	"\ftotal_chunks\x18\a \x01(\rR\vtotalChunks\"^\n" +
+	"\x0fFileTransferAck\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x1b\n" +
+	"\tfile_path\x18\x02 \x01(\tR\bfilePath\x12\x14\n" +
+	"\x05error\x18\x03 \x01(\tR\x05error*,\n" +
 	"\vMessageType\x12\b\n" +
 	"\x04TEXT\x10\x00\x12\t\n" +
 	"\x05IMAGE\x10\x01\x12\b\n" +
-	"\x04FILE\x10\x022\xae\x03\n" +
+	"\x04FILE\x10\x022\xe5\x03\n" +
 	"\x0eP2PChatService\x12/\n" +
 	"\x0eReceiveMessage\x12\f.p2p.Message\x1a\x0f.p2p.MessageAck\x12+\n" +
 	"\x04Ping\x12\x10.p2p.PingRequest\x1a\x11.p2p.PingResponse\x12(\n" +
@@ -812,7 +979,8 @@ const file_p2p_proto_rawDesc = "" +
 	"\x15ReceiveVideoCallOffer\x12\x13.p2p.VideoCallOffer\x1a\x11.p2p.VideoCallAck\x12A\n" +
 	"\x16ReceiveVideoCallAnswer\x12\x14.p2p.VideoCallAnswer\x1a\x11.p2p.VideoCallAck\x12M\n" +
 	"\x1cReceiveVideoCallICECandidate\x12\x1a.p2p.VideoCallICECandidate\x1a\x11.p2p.VideoCallAck\x12A\n" +
-	"\x16ReceiveVideoCallHangup\x12\x14.p2p.VideoCallHangup\x1a\x11.p2p.VideoCallAckB\x0fZ\rp2pchat2.0/pbb\x06proto3"
+	"\x16ReceiveVideoCallHangup\x12\x14.p2p.VideoCallHangup\x1a\x11.p2p.VideoCallAck\x125\n" +
+	"\vReceiveFile\x12\x0e.p2p.FileChunk\x1a\x14.p2p.FileTransferAck(\x01B\x0fZ\rp2pchat2.0/pbb\x06proto3"
 
 var (
 	file_p2p_proto_rawDescOnce sync.Once
@@ -827,7 +995,7 @@ func file_p2p_proto_rawDescGZIP() []byte {
 }
 
 var file_p2p_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_p2p_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_p2p_proto_goTypes = []any{
 	(MessageType)(0),              // 0: p2p.MessageType
 	(*Empty)(nil),                 // 1: p2p.Empty
@@ -841,6 +1009,8 @@ var file_p2p_proto_goTypes = []any{
 	(*VideoCallICECandidate)(nil), // 9: p2p.VideoCallICECandidate
 	(*VideoCallHangup)(nil),       // 10: p2p.VideoCallHangup
 	(*VideoCallAck)(nil),          // 11: p2p.VideoCallAck
+	(*FileChunk)(nil),             // 12: p2p.FileChunk
+	(*FileTransferAck)(nil),       // 13: p2p.FileTransferAck
 }
 var file_p2p_proto_depIdxs = []int32{
 	0,  // 0: p2p.Message.type:type_name -> p2p.MessageType
@@ -851,15 +1021,17 @@ var file_p2p_proto_depIdxs = []int32{
 	8,  // 5: p2p.P2PChatService.ReceiveVideoCallAnswer:input_type -> p2p.VideoCallAnswer
 	9,  // 6: p2p.P2PChatService.ReceiveVideoCallICECandidate:input_type -> p2p.VideoCallICECandidate
 	10, // 7: p2p.P2PChatService.ReceiveVideoCallHangup:input_type -> p2p.VideoCallHangup
-	3,  // 8: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
-	5,  // 9: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
-	6,  // 10: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
-	11, // 11: p2p.P2PChatService.ReceiveVideoCallOffer:output_type -> p2p.VideoCallAck
-	11, // 12: p2p.P2PChatService.ReceiveVideoCallAnswer:output_type -> p2p.VideoCallAck
-	11, // 13: p2p.P2PChatService.ReceiveVideoCallICECandidate:output_type -> p2p.VideoCallAck
-	11, // 14: p2p.P2PChatService.ReceiveVideoCallHangup:output_type -> p2p.VideoCallAck
-	8,  // [8:15] is the sub-list for method output_type
-	1,  // [1:8] is the sub-list for method input_type
+	12, // 8: p2p.P2PChatService.ReceiveFile:input_type -> p2p.FileChunk
+	3,  // 9: p2p.P2PChatService.ReceiveMessage:output_type -> p2p.MessageAck
+	5,  // 10: p2p.P2PChatService.Ping:output_type -> p2p.PingResponse
+	6,  // 11: p2p.P2PChatService.GetPeerInfo:output_type -> p2p.PeerInfo
+	11, // 12: p2p.P2PChatService.ReceiveVideoCallOffer:output_type -> p2p.VideoCallAck
+	11, // 13: p2p.P2PChatService.ReceiveVideoCallAnswer:output_type -> p2p.VideoCallAck
+	11, // 14: p2p.P2PChatService.ReceiveVideoCallICECandidate:output_type -> p2p.VideoCallAck
+	11, // 15: p2p.P2PChatService.ReceiveVideoCallHangup:output_type -> p2p.VideoCallAck
+	13, // 16: p2p.P2PChatService.ReceiveFile:output_type -> p2p.FileTransferAck
+	9,  // [9:17] is the sub-list for method output_type
+	1,  // [1:9] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -876,7 +1048,7 @@ func file_p2p_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_p2p_proto_rawDesc), len(file_p2p_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -17,6 +17,9 @@ service P2PChatService {
   rpc ReceiveVideoCallAnswer(VideoCallAnswer) returns (VideoCallAck);
   rpc ReceiveVideoCallICECandidate(VideoCallICECandidate) returns (VideoCallAck);
   rpc ReceiveVideoCallHangup(VideoCallHangup) returns (VideoCallAck);
+
+  // File transfer — client-streaming so large files are sent in chunks.
+  rpc ReceiveFile(stream FileChunk) returns (FileTransferAck);
 }
 
 message Empty {}
@@ -91,4 +94,22 @@ message VideoCallHangup {
 
 message VideoCallAck {
   bool success = 1;
+}
+
+// File transfer messages
+
+message FileChunk {
+  string from_peer_id = 1;
+  string to_peer_id = 2;
+  string file_name = 3;
+  int64 file_size = 4;     // total file size in bytes
+  bytes data = 5;          // chunk payload
+  uint32 chunk_index = 6;
+  uint32 total_chunks = 7;
+}
+
+message FileTransferAck {
+  bool success = 1;
+  string file_path = 2;   // where the file was saved on the receiver's disk
+  string error = 3;
 }

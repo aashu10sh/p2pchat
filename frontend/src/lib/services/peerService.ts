@@ -5,6 +5,8 @@ import { err, ok, Result } from 'neverthrow';
 import { writable } from 'svelte/store';
 import { messages } from './chatService';
 import { sortMessagesByTimestamp } from '$lib/utils';
+import { fileTransfers } from './fileService';
+import type { FileTransfer } from '$lib/entites/fileTransfer';
 import {
 	handleRemoteOffer,
 	handleRemoteAnswer,
@@ -119,6 +121,24 @@ export default class PeerService {
 				messages.update((msgs) => sortMessagesByTimestamp([...msgs, message]));
 			} catch (e) {
 				console.error('Failed to parse sent message:', e);
+			}
+		});
+
+		this.eventSource.addEventListener('file_received', (event) => {
+			try {
+				const ft = JSON.parse(event.data) as FileTransfer;
+				fileTransfers.update((fts) => [ft, ...fts]);
+			} catch (e) {
+				console.error('Failed to parse file received event:', e);
+			}
+		});
+
+		this.eventSource.addEventListener('file_sent', (event) => {
+			try {
+				const ft = JSON.parse(event.data) as FileTransfer;
+				fileTransfers.update((fts) => [ft, ...fts]);
+			} catch (e) {
+				console.error('Failed to parse file sent event:', e);
 			}
 		});
 

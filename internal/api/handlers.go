@@ -19,6 +19,7 @@ type APIHandler struct {
 	peerSvc    *service.PeerService
 	database   *db.Database
 	chatSvc    *service.ChatService
+	fileSvc    *service.FileService
 	eventBus   *events.EventBus
 }
 
@@ -26,6 +27,7 @@ func NewAPIHandler(
 	profileSvc *service.ProfileService,
 	database *db.Database,
 	chatSvc *service.ChatService,
+	fileSvc *service.FileService,
 	peerSvc *service.PeerService,
 	eventBus *events.EventBus,
 ) *APIHandler {
@@ -33,6 +35,7 @@ func NewAPIHandler(
 		profileSvc: profileSvc,
 		database:   database,
 		chatSvc:    chatSvc,
+		fileSvc:    fileSvc,
 		peerSvc:    peerSvc,
 		eventBus:   eventBus,
 	}
@@ -381,4 +384,62 @@ func respondEvent(w http.ResponseWriter, flusher http.Flusher, eventType string,
 	// Flush immediately
 	flusher.Flush()
 	return nil
+}
+
+// File transfer handlers
+
+func (h *APIHandler) HandleSendFile(w http.ResponseWriter, r *http.Request) {
+	var req SendFileRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.ToPeerID == "" || req.FilePath == "" {
+		respondError(w, http.StatusBadRequest, "to_peer_id and file_path are required")
+		return
+	}
+
+	// This is a blocking operation if the file is large, but for local network it should be ok for now
+	// Ideally we'd return a job ID and run in a goroutine, but doing it synchronously to keep it simple as requested
+	if err := h.fileSvc.SendFile(req.ToPeerID, req.FilePath); err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to send file: "+err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]string{"status": "file_sent"})
+}
+
+func (h *APIHandler) HandleGetFileTransfers(w http.ResponseWriter, r *http.Request) {
+	peerID := r.URL.Query().Get("peer_id")
+	if peerID == "" {
+		respondError(w, http.StatusBadRequest, "peer_id is required")
+		return
+	}
+
+	transfers, err := h.fileSvc.GetFileTransfers(peerID)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, "failed to fetch file transfers: "+err.Error())
+		return
+	}
+
+	var response []FileTransferResponse
+	for _, t := range transfers {
+		response = append(response, FileTransferResponse{
+			ID:         t.ID,
+			FromPeerID: t.FromPeerID,
+			ToPeerID:   t.ToPeerID,
+			FileName:   t.FileName,
+			FileSize:   t.FileSize,
+			FilePath:   t.FilePath,
+			Direction:  t.Direction,
+			CreatedAt:  t.CreatedAt,
+		})
+	}
+	
+	if response == nil {
+		response = []FileTransferResponse{}
+	}
+
+	respondJSON(w, http.StatusOK, response)
 }

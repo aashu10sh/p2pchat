@@ -89,3 +89,20 @@ type VideoCallHangupRequest struct {
 	ToPeerID string `json:"to_peer_id"`
 	Reason   string `json:"reason"`
 }
+
+type SendFileRequest struct {
+	ToPeerID string `json:"to_peer_id" binding:"required"`
+	FilePath string `json:"file_path" binding:"required"`
+}
+
+type FileTransferResponse struct {
+	ID         uint      `json:"id"`
+	FromPeerID string    `json:"from_peer_id"`
+	ToPeerID   string    `json:"to_peer_id"`
+	FileName   string    `json:"file_name"`
+	FileSize   int64     `json:"file_size"`
+	FilePath   string    `json:"file_path"`
+	Direction  string    `json:"direction"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+

@@ -3,6 +3,7 @@
 	import ChatService, { messages } from '$lib/services/chatService';
 	import { peers } from '$lib/services/peerService';
 	import { startCall } from '$lib/services/callService';
+	import FileSharing from '$lib/components/FileSharing.svelte';
 	import type { Message } from '$lib/entites/message';
 	import type { Peer } from '$lib/entites/peer';
 	import {
@@ -27,6 +28,7 @@
 	let currentPeer = $state<Peer | null>(null);
 	let inputRef = $state<HTMLInputElement | null>(null);
 	let isFocused = $state(false);
+	let currentTab = $state<'chat' | 'files'>('chat');
 
 	const chatService = new ChatService();
 
@@ -162,6 +164,24 @@
 					</span>
 				</div>
 			</div>
+			
+			<div class="header-tabs">
+				<button 
+					class="tab-btn" 
+					class:active={currentTab === 'chat'} 
+					onclick={() => currentTab = 'chat'}
+				>
+					Messages
+				</button>
+				<button 
+					class="tab-btn" 
+					class:active={currentTab === 'files'} 
+					onclick={() => currentTab = 'files'}
+				>
+					Files
+				</button>
+			</div>
+
 			<div class="header-actions">
 				{#if currentPeer && isRecentlyOnline(currentPeer)}
 					<button class="action-btn call-btn" onclick={handleCallPeer} title="Start video call">
@@ -174,98 +194,102 @@
 			</div>
 		</div>
 
-		<!-- Messages -->
-		<div class="messages-area" bind:this={chatContainer}>
-			{#if isLoading}
-				<div class="loading-state">
-					<div class="skeleton-group">
-						{#each [1, 2, 3] as _}
+		{#if currentTab === 'chat'}
+			<!-- Messages -->
+			<div class="messages-area" bind:this={chatContainer}>
+				{#if isLoading}
+					<div class="loading-state">
+						<div class="skeleton-group">
+							{#each [1, 2, 3] as _}
+								<div class="skeleton-row left">
+									<div class="skeleton-bubble" style="width: {140 + Math.random() * 80}px"></div>
+								</div>
+							{/each}
+							<div class="skeleton-row right">
+								<div class="skeleton-bubble" style="width: {100 + Math.random() * 60}px"></div>
+							</div>
 							<div class="skeleton-row left">
-								<div class="skeleton-bubble" style="width: {140 + Math.random() * 80}px"></div>
+								<div class="skeleton-bubble" style="width: {160 + Math.random() * 60}px"></div>
 							</div>
-						{/each}
-						<div class="skeleton-row right">
-							<div class="skeleton-bubble" style="width: {100 + Math.random() * 60}px"></div>
-						</div>
-						<div class="skeleton-row left">
-							<div class="skeleton-bubble" style="width: {160 + Math.random() * 60}px"></div>
 						</div>
 					</div>
-				</div>
-			{:else if messageList.length === 0}
-				<div class="no-messages">
-					<div class="no-msg-icon">👋</div>
-					<p class="no-msg-title">No messages yet</p>
-					<p class="no-msg-sub">Send a message to start the conversation.</p>
-				</div>
-			{:else}
-				{#each messageList as message, index (message.ID)}
-					<!-- Date separator -->
-					{#if index === 0 || formatDate(messageList[index - 1].sent_at) !== formatDate(message.sent_at)}
-						<div class="date-divider">
-							<span>{formatDate(message.sent_at)}</span>
-						</div>
-					{/if}
+				{:else if messageList.length === 0}
+					<div class="no-messages">
+						<div class="no-msg-icon">👋</div>
+						<p class="no-msg-title">No messages yet</p>
+						<p class="no-msg-sub">Send a message to start the conversation.</p>
+					</div>
+				{:else}
+					{#each messageList as message, index (message.ID)}
+						<!-- Date separator -->
+						{#if index === 0 || formatDate(messageList[index - 1].sent_at) !== formatDate(message.sent_at)}
+							<div class="date-divider">
+								<span>{formatDate(message.sent_at)}</span>
+							</div>
+						{/if}
 
-					<!-- Message bubble -->
-					{@const mine = isMine(message)}
-					<div
-						class="message-row"
-						class:sent={mine}
-						class:received={!mine}
-					>
-						<div class="bubble">
-							<p class="bubble-text">{message.content}</p>
-							<div class="bubble-meta">
-								<span class="bubble-time">{formatTime(message.sent_at)}</span>
-								{#if mine}
-									{#if message.delivered_at}
-										<svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<polyline points="20 6 9 17 4 12"></polyline>
-										</svg>
-									{:else}
-										<svg class="check-icon pending" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-											<circle cx="12" cy="12" r="10"></circle>
-										</svg>
+						<!-- Message bubble -->
+						{@const mine = isMine(message)}
+						<div
+							class="message-row"
+							class:sent={mine}
+							class:received={!mine}
+						>
+							<div class="bubble">
+								<p class="bubble-text">{message.content}</p>
+								<div class="bubble-meta">
+									<span class="bubble-time">{formatTime(message.sent_at)}</span>
+									{#if mine}
+										{#if message.delivered_at}
+											<svg class="check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+												<polyline points="20 6 9 17 4 12"></polyline>
+											</svg>
+										{:else}
+											<svg class="check-icon pending" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+												<circle cx="12" cy="12" r="10"></circle>
+											</svg>
+										{/if}
 									{/if}
-								{/if}
+								</div>
 							</div>
 						</div>
-					</div>
-				{/each}
-			{/if}
-		</div>
-
-		<!-- Input -->
-		<form class="input-bar" onsubmit={handleSendMessage}>
-			<div class="input-container" class:focused={isFocused}>
-				<input
-					bind:this={inputRef}
-					bind:value={messageInput}
-					type="text"
-					placeholder="Type a message..."
-					autocomplete="off"
-					spellcheck="false"
-					disabled={isSending}
-					onfocus={() => (isFocused = true)}
-					onblur={() => (isFocused = false)}
-				/>
-				<button
-					type="submit"
-					class="send-btn"
-					disabled={!messageInput.trim() || isSending}
-					title="Send message"
-				>
-					{#if isSending}
-						<div class="send-spinner"></div>
-					{:else}
-						<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-							<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
-						</svg>
-					{/if}
-				</button>
+					{/each}
+				{/if}
 			</div>
-		</form>
+
+			<!-- Input -->
+			<form class="input-bar" onsubmit={handleSendMessage}>
+				<div class="input-container" class:focused={isFocused}>
+					<input
+						bind:this={inputRef}
+						bind:value={messageInput}
+						type="text"
+						placeholder="Type a message..."
+						autocomplete="off"
+						spellcheck="false"
+						disabled={isSending}
+						onfocus={() => (isFocused = true)}
+						onblur={() => (isFocused = false)}
+					/>
+					<button
+						type="submit"
+						class="send-btn"
+						disabled={!messageInput.trim() || isSending}
+						title="Send message"
+					>
+						{#if isSending}
+							<div class="send-spinner"></div>
+						{:else}
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+								<path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+							</svg>
+						{/if}
+					</button>
+				</div>
+			</form>
+		{:else}
+			<FileSharing {activePeer} />
+		{/if}
 	</div>
 {/if}
 
@@ -365,6 +389,36 @@
 	.header-actions {
 		display: flex;
 		gap: 8px;
+	}
+
+	.header-tabs {
+		display: flex;
+		background: var(--bg-tertiary);
+		border-radius: var(--radius-full);
+		padding: 2px;
+		margin-left: 20px;
+	}
+
+	.tab-btn {
+		border: none;
+		background: transparent;
+		padding: 4px 14px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--text-secondary);
+		border-radius: var(--radius-full);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.tab-btn:hover {
+		color: var(--text-primary);
+	}
+
+	.tab-btn.active {
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 	}
 
 	.action-btn {

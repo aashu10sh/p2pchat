@@ -37,6 +37,7 @@ func main() {
 	profileSvc := service.NewProfileService(database)
 	chatSvc := service.NewChatService(database, peerManager, profileSvc, eventBus)
 	peerSvc := service.NewPeerService(database)
+	fileSvc := service.NewFileService(database, peerManager, profileSvc, eventBus)
 
 	// Get current profile for mDNS announcement
 	profile, err := profileSvc.GetCurrentProfile()
@@ -45,7 +46,7 @@ func main() {
 		log.Printf("Warning: No profile found. mDNS will not start. Create a profile first: %v", err)
 	}
 
-	httpServer := SetupHttpServer(embeddedFiles, profileSvc, peerSvc, database, chatSvc, eventBus)
+	httpServer := SetupHttpServer(embeddedFiles, profileSvc, peerSvc, database, chatSvc, fileSvc, eventBus)
 
 	go func() {
 		log.Printf("HTTP server listening on http://localhost:8000")
@@ -62,7 +63,7 @@ func main() {
 		}
 		grpcServer := grpc.NewServer()
 
-		p2pChatServer := ggrpc.NewP2PChatServer(chatSvc, profileSvc, eventBus)
+		p2pChatServer := ggrpc.NewP2PChatServer(chatSvc, profileSvc, fileSvc, eventBus)
 		pb.RegisterP2PChatServiceServer(grpcServer, p2pChatServer)
 
 		if err := grpcServer.Serve(lis); err != nil {
@@ -113,11 +114,12 @@ func SetupHttpServer(
 	peerSvc *service.PeerService,
 	database *db.Database,
 	chatSvc *service.ChatService,
+	fileSvc *service.FileService,
 	eventBus *events.EventBus,
 ) *http.Server {
 	mux := http.NewServeMux()
 
-	handler := api.NewAPIHandler(profileSvc, database, chatSvc, peerSvc, eventBus)
+	handler := api.NewAPIHandler(profileSvc, database, chatSvc, fileSvc, peerSvc, eventBus)
 
 	mux.HandleFunc("/api/profile/check", handler.CheckProfile)
 
@@ -157,6 +159,10 @@ func SetupHttpServer(
 	mux.HandleFunc("/api/call/answer", handler.HandleVideoCallAnswer)
 	mux.HandleFunc("/api/call/ice-candidate", handler.HandleVideoCallICECandidate)
 	mux.HandleFunc("/api/call/hangup", handler.HandleVideoCallHangup)
+
+	// File transfer routes
+	mux.HandleFunc("/api/files/send", handler.HandleSendFile)
+	mux.HandleFunc("/api/files", handler.HandleGetFileTransfers)
 
 	frontendFS, _ := fs.Sub(frontendFiles, "frontend/build")
 	mux.Handle("/", http.FileServer(http.FS(frontendFS)))

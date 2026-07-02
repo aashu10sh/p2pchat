@@ -26,6 +26,7 @@ const (
 	P2PChatService_ReceiveVideoCallAnswer_FullMethodName       = "/p2p.P2PChatService/ReceiveVideoCallAnswer"
 	P2PChatService_ReceiveVideoCallICECandidate_FullMethodName = "/p2p.P2PChatService/ReceiveVideoCallICECandidate"
 	P2PChatService_ReceiveVideoCallHangup_FullMethodName       = "/p2p.P2PChatService/ReceiveVideoCallHangup"
+	P2PChatService_ReceiveFile_FullMethodName                  = "/p2p.P2PChatService/ReceiveFile"
 )
 
 // P2PChatServiceClient is the client API for P2PChatService service.
@@ -45,6 +46,8 @@ type P2PChatServiceClient interface {
 	ReceiveVideoCallAnswer(ctx context.Context, in *VideoCallAnswer, opts ...grpc.CallOption) (*VideoCallAck, error)
 	ReceiveVideoCallICECandidate(ctx context.Context, in *VideoCallICECandidate, opts ...grpc.CallOption) (*VideoCallAck, error)
 	ReceiveVideoCallHangup(ctx context.Context, in *VideoCallHangup, opts ...grpc.CallOption) (*VideoCallAck, error)
+	// File transfer — client-streaming so large files are sent in chunks.
+	ReceiveFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, FileTransferAck], error)
 }
 
 type p2PChatServiceClient struct {
@@ -125,6 +128,19 @@ func (c *p2PChatServiceClient) ReceiveVideoCallHangup(ctx context.Context, in *V
 	return out, nil
 }
 
+func (c *p2PChatServiceClient) ReceiveFile(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, FileTransferAck], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &P2PChatService_ServiceDesc.Streams[0], P2PChatService_ReceiveFile_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[FileChunk, FileTransferAck]{ClientStream: stream}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type P2PChatService_ReceiveFileClient = grpc.ClientStreamingClient[FileChunk, FileTransferAck]
+
 // P2PChatServiceServer is the server API for P2PChatService service.
 // All implementations must embed UnimplementedP2PChatServiceServer
 // for forward compatibility.
@@ -142,6 +158,8 @@ type P2PChatServiceServer interface {
 	ReceiveVideoCallAnswer(context.Context, *VideoCallAnswer) (*VideoCallAck, error)
 	ReceiveVideoCallICECandidate(context.Context, *VideoCallICECandidate) (*VideoCallAck, error)
 	ReceiveVideoCallHangup(context.Context, *VideoCallHangup) (*VideoCallAck, error)
+	// File transfer — client-streaming so large files are sent in chunks.
+	ReceiveFile(grpc.ClientStreamingServer[FileChunk, FileTransferAck]) error
 	mustEmbedUnimplementedP2PChatServiceServer()
 }
 
@@ -172,6 +190,9 @@ func (UnimplementedP2PChatServiceServer) ReceiveVideoCallICECandidate(context.Co
 }
 func (UnimplementedP2PChatServiceServer) ReceiveVideoCallHangup(context.Context, *VideoCallHangup) (*VideoCallAck, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReceiveVideoCallHangup not implemented")
+}
+func (UnimplementedP2PChatServiceServer) ReceiveFile(grpc.ClientStreamingServer[FileChunk, FileTransferAck]) error {
+	return status.Error(codes.Unimplemented, "method ReceiveFile not implemented")
 }
 func (UnimplementedP2PChatServiceServer) mustEmbedUnimplementedP2PChatServiceServer() {}
 func (UnimplementedP2PChatServiceServer) testEmbeddedByValue()                        {}
@@ -320,6 +341,13 @@ func _P2PChatService_ReceiveVideoCallHangup_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _P2PChatService_ReceiveFile_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(P2PChatServiceServer).ReceiveFile(&grpc.GenericServerStream[FileChunk, FileTransferAck]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type P2PChatService_ReceiveFileServer = grpc.ClientStreamingServer[FileChunk, FileTransferAck]
+
 // P2PChatService_ServiceDesc is the grpc.ServiceDesc for P2PChatService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -356,6 +384,12 @@ var P2PChatService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _P2PChatService_ReceiveVideoCallHangup_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "ReceiveFile",
+			Handler:       _P2PChatService_ReceiveFile_Handler,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "p2p.proto",
 }

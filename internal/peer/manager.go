@@ -129,3 +129,20 @@ func (m *Manager) SendVideoCallHangup(peerID string, hangup *pb.VideoCallHangup)
 	_, err := peer.Client.ReceiveVideoCallHangup(context.Background(), hangup)
 	return err
 }
+
+func (m *Manager) GetSendFileStream(peerID string) (pb.P2PChatService_ReceiveFileClient, error) {
+	m.mu.RLock()
+	peer := m.peers[peerID]
+	m.mu.RUnlock()
+
+	if peer == nil {
+		return nil, fmt.Errorf("peer not connected")
+	}
+
+	stream, err := peer.Client.ReceiveFile(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	return stream, nil
+}

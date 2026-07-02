@@ -53,3 +53,13 @@ type Message struct {
 	// computed field
 	IsSentByMe bool `gorm:"-" json:"is_sent_by_me"`
 }
+
+type FileTransfer struct {
+	gorm.Model
+	FromPeerID string `gorm:"index" json:"from_peer_id"`
+	ToPeerID   string `gorm:"index" json:"to_peer_id"`
+	FileName   string `json:"file_name"`
+	FileSize   int64  `json:"file_size"`
+	FilePath   string `json:"file_path"` // absolute path on disk
+	Direction  string `json:"direction"` // "sent" or "received"
+}

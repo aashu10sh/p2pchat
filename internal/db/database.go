@@ -32,6 +32,7 @@ func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(&Peer{})
 	db.AutoMigrate(&Chat{})
 	db.AutoMigrate(&Message{})
+	db.AutoMigrate(&FileTransfer{})
 }
 
 type Database struct {
@@ -164,4 +165,23 @@ func (d *Database) GetAllPeers() ([]*Peer, error) {
 	}
 
 	return peers, nil
+}
+
+func (d *Database) CreateFileTransfer(ft *FileTransfer) error {
+	return d.Db.Create(ft).Error
+}
+
+// GetFileTransfersByPeer returns file transfers between self and a given peer, newest first.
+func (d *Database) GetFileTransfersByPeer(selfPeerID, theirPeerID string) ([]*FileTransfer, error) {
+	var transfers []*FileTransfer
+
+	err := d.Db.Where(
+		"(from_peer_id = ? AND to_peer_id = ?) OR (from_peer_id = ? AND to_peer_id = ?)",
+		selfPeerID, theirPeerID, theirPeerID, selfPeerID,
+	).Order("created_at DESC").Find(&transfers).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return transfers, nil
 }
