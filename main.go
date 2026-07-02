@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -175,7 +176,20 @@ func SetupHttpServer(
 	mux.HandleFunc("/api/files", handler.HandleGetFileTransfers)
 
 	frontendFS, _ := fs.Sub(frontendFiles, "frontend/build")
-	mux.Handle("/", http.FileServer(http.FS(frontendFS)))
+	fileServer := http.FileServer(http.FS(frontendFS))
+
+	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/")
+		if path == "" {
+			path = "."
+		}
+
+		if _, err := fs.Stat(frontendFS, path); err != nil {
+			// File doesn't exist, fallback to index.html (SPA routing)
+			r.URL.Path = "/"
+		}
+		fileServer.ServeHTTP(w, r)
+	}))
 
 	return &http.Server{
 		Addr:              ":8000",
