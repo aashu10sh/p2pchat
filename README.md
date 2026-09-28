@@ -1,63 +1,51 @@
 # P2P Chat
-> A discord/slack like peer to peer chat application made to chat in a local subnet.
-The application will discover new hosts in a subnet using the mDNS protocol and maintin a client collection with them along with getting their info.
+A discord/slack like peer to peer chat application made to chat within a subnet with support for automatic host discovery, file transfer and video calling.
+
+* Simple: well-defined, elegantly designed user facing application 
+* Browser-Based: uses a browser window as user interface
+* Isolated: chats across different wifi-networks are isolated
+
+## Objective
+Designed to be a effective chatting/calling alternative within the people in an office.
+
+## Getting Started
+The best way of getting started is to clone the repo and build the project locally, its dead simple.
+
+### Getting p2pchat
+
+```
+git clone git@github.com:aashu10sh/p2pchat
+```
+
+Once the project is cloned
+
+### Building the frontend
+
+```bash
+cd frontend
+npm run build
+```
+Note: Any nodejs version above 22 should work just fine
+
+The built frontend assets is embed inside the go binary and exposed via a file router.
+
+### Building the backend
+```bash
+go build .
+```
 
 
-┌─────────────────────────────────────────────────────────────┐
-│                    Peer A (192.168.1.10)                     │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  HTTP REST API Server (Port 8080)                      │ │
-│  │  ├─ GET  /api/profile                                  │ │
-│  │  ├─ POST /api/profile                                  │ │
-│  │  ├─ GET  /api/peers                                    │ │
-│  │  ├─ GET  /api/messages?peer_id=xxx                     │ │
-│  │  ├─ POST /api/messages                                 │ │
-│  │  ├─ GET  /api/messages/stream (SSE)                    │ │
-│  │  └─ Static files (Svelte app at /)                     │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  gRPC Server (Port 50051) - P2P Only                   │ │
-│  │  ├─ ReceiveMessage(Message) → MessageAck              │ │
-│  │  ├─ Ping(PingRequest) → PingResponse                  │ │
-│  │  └─ GetPeerInfo() → PeerInfo                          │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  mDNS Service                                          │ │
-│  │  └─ Broadcasts: _p2pchat._tcp.local                   │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  Peer Manager                                          │ │
-│  │  └─ Maintains gRPC clients to other nodes             │ │
-│  └────────────────────────────────────────────────────────┘ │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │  SQLite Database                                       │ │
-│  └────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-         ▲                                    ║
-         │ REST API                           ║ gRPC
-         │ (JSON over HTTP)                   ║ (Protocol Buffers)
-         │                                    ║
-    ┌────┴─────┐                         ┌───▼────────────────┐
-    │ Browser  │                         │  Peer B            │
-    │ Svelte   │                         │  (192.168.1.20)    │
-    └──────────┘                         │  gRPC Server :50052│
-                                         └────────────────────┘
+### Run application
 
+```bash
+./p2pchat
+```
 
-## 🎯 **Summary**
+# Architecture
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Frontend ↔ Backend** | REST API (JSON) | Browser makes HTTP requests |
-| **Node ↔ Node** | gRPC (Protobuf) | Direct P2P communication |
-| **Discovery** | mDNS | Auto-discover peers on subnet |
-| **Real-time Updates** | Server-Sent Events | Push messages to browser |
+p2pchat's frontend is built in svelte with sv router.
 
-**Benefits:**
-- ✅ Simple frontend (just fetch API)
-- ✅ Efficient P2P (gRPC between nodes)
-- ✅ Real-time (SSE for message streaming)
-- ✅ Type-safe (Protobuf for P2P, TypeScript for frontend)
-- ✅ No desktop framework issues
-
-This is the perfect architecture! 🎉
+p2pchat uses:
+* go's net/http package for client/server communication between the backend and the frontend.
+* grpc for node to node communication in a network, for sending texts, exchanging ICE candidates allowing webRTC communication to happen for video calls.
+* mDNS for automatic discovery when a node comes to and leaves the network.
